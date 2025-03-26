@@ -1,0 +1,66 @@
+import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+
+export default function Layout({ children }) {
+  const router = useRouter();
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center">
+                <Link href="/">
+                  <a className="text-primary-dark font-bold text-xl">Meal Maker</a>
+                </Link>
+              </div>
+              <nav className="ml-6 flex space-x-8">
+                <Link href="/">
+                  <a className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                    router.pathname === '/' 
+                      ? 'border-primary text-gray-900' 
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}>
+                    Home
+                  </a>
+                </Link>
+                <Link href="/recipes">
+                  <a className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                    router.pathname.startsWith('/recipes') 
+                      ? 'border-primary text-gray-900' 
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}>
+                    Recipes
+                  </a>
+                </Link>
+                <Link href="/shopping-list">
+                  <a className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                    router.pathname === '/shopping-list' 
+                      ? 'border-primary text-gray-900' 
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}>
+                    Shopping List
+                  </a>
+                </Link>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {children}
+      </main>
+      
+      <footer className="bg-white border-t border-gray-200 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-gray-500 text-sm">
+            &copy; {new Date().getFullYear()} Meal Maker. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
