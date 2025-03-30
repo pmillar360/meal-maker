@@ -17,6 +17,10 @@ Optionally, integrate Spoonacular API or Edamam API for recipes.
 Users can filter by meal type: Breakfast, Lunch, Dinner, Snacks.
 
 Users can filter by dietary needs: Vegetarian, Vegan, High-Protein, etc.
+    - These can be tags for recipes/meals
+    - A user can mark themself as vegetarian or vegan to only see those types of meals
+
+User can filter by a specific ingredient they want to be included in the meal
 
 ✅ Recipe Detail Page
 
