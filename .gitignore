@@ -41,3 +41,4 @@ Thumbs.db
 *.css.map
 
 /frontend/node_modules
+/frontend/.next
