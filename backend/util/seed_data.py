@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from . import models
-from .database import engine, SessionLocal
+from ..app import models
+from ..app.database import engine, SessionLocal
 
 def seed_diets(db: Session):
     """Seed dietary preferences"""

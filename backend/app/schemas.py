@@ -13,6 +13,7 @@ class Diet(DietBase):
 
 class IngredientBase(BaseModel):
     name: str
+    category: Optional[str] = None
 
 class Ingredient(IngredientBase):
     id: int
@@ -22,9 +23,10 @@ class Ingredient(IngredientBase):
 
 class RecipeBase(BaseModel):
     title: str
-    meal_type: str
-    cooking_time: int
-    servings: int
+    meal_type: Optional[str] = None
+    cooking_time: Optional[int] = None
+    servings: Optional[int] = None
+    description: Optional[str] = None
 
 class Recipe(RecipeBase):
     id: int
@@ -34,9 +36,9 @@ class Recipe(RecipeBase):
 
 class RecipeDetail(RecipeBase):
     id: int
-    instructions: str
-    ingredients: List[Ingredient]
-    diets: List[Diet]
+    instructions: Optional[str] = None
+    ingredients: List[Ingredient] = []
+    diets: List[Diet] = []
     
     class Config:
         orm_mode = True

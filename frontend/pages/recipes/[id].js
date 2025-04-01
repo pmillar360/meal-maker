@@ -169,9 +169,14 @@ export default function RecipeDetail() {
             <div className="md:col-span-2">
               <h2 className="text-xl font-semibold mb-4">Instructions</h2>
               <div className="prose max-w-none">
-                {recipe.instructions.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4">{paragraph}</p>
-                ))}
+                {recipe.instructions.split('\n').map((paragraph, index) => {
+                  // Insert a new line before numbered steps (e.g., "2.")
+                  const formattedParagraph = paragraph.replace(/(\d+\.)/g, '\n$1').trim();
+                  
+                  return (
+                    <p key={index} className="mb-4 whitespace-pre-line">{formattedParagraph}</p>
+                  );
+                })}
               </div>
             </div>
           </div>
