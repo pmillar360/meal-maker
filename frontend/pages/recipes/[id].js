@@ -59,8 +59,8 @@ export default function RecipeDetail() {
     return (
       <div className="text-center py-10">
         <p className="text-red-500 mb-4">{error}</p>
-        <Link href="/recipes">
-          <a className="btn btn-primary">Back to Recipes</a>
+        <Link href="/recipes" className="btn btn-primary">
+          Back to Recipes
         </Link>
       </div>
     );
@@ -73,14 +73,14 @@ export default function RecipeDetail() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/recipes">
-          <a className="inline-flex items-center text-primary hover:text-primary-dark">
-            <FaArrowLeft className="mr-2" />
-            Back to recipes
-          </a>
+        <Link
+          href="/recipes"
+          className="inline-flex items-center text-primary hover:text-primary-dark">
+
+          <FaArrowLeft className="mr-2" />Back to recipes
+                    
         </Link>
       </div>
-
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Recipe Header */}
         <div className="h-64 bg-gray-200 flex items-end">

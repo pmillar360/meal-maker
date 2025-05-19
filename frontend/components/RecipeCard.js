@@ -28,10 +28,12 @@ export default function RecipeCard({ recipe }) {
           ))}
         </div>
         <div className="mt-4">
-          <Link href={`/recipes/${recipe.id}`}>
-            <a className="text-primary hover:text-primary-dark font-medium">
+          <Link
+            href={`/recipes/${recipe.id}`}
+            className="text-primary hover:text-primary-dark font-medium">
+            
               View Recipe
-            </a>
+            
           </Link>
         </div>
       </div>

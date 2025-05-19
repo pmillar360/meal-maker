@@ -29,16 +29,17 @@ export default function Home() {
           <h1 className="text-4xl font-bold">Welcome to Meal Maker</h1>
           <p className="text-xl">Find recipes based on ingredients you already have</p>
           <div className="flex justify-center space-x-4">
-            <Link href="/recipes">
-              <a className="btn bg-white text-primary hover:bg-gray-100">Browse Recipes</a>
+            <Link href="/recipes" className="btn bg-white text-primary hover:bg-gray-100">
+              Browse Recipes
             </Link>
-            <Link href="/shopping-list">
-              <a className="btn bg-primary-dark text-white hover:bg-opacity-90">My Shopping List</a>
+            <Link
+              href="/shopping-list"
+              className="btn bg-primary-dark text-white hover:bg-opacity-90">
+              My Shopping List
             </Link>
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section className="py-8">
         <h2 className="text-2xl font-bold text-center mb-8">How It Works</h2>
@@ -60,13 +61,12 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Featured Recipes Section */}
       <section className="py-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Featured Recipes</h2>
-          <Link href="/recipes">
-            <a className="text-primary hover:text-primary-dark">View all →</a>
+          <Link href="/recipes" className="text-primary hover:text-primary-dark">
+            View all →
           </Link>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
@@ -74,16 +74,19 @@ export default function Home() {
             <p>Loading featured recipes...</p>
           ) : featuredRecipes.length > 0 ? (
             featuredRecipes.map(recipe => (
-              <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
-                <a className="card hover:shadow-lg transition-shadow duration-200">
-                  <div className="h-40 bg-gray-200"></div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-1">{recipe.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {recipe.cooking_time} mins | {recipe.meal_type}
-                    </p>
-                  </div>
-                </a>
+              <Link
+                key={recipe.id}
+                href={`/recipes/${recipe.id}`}
+                className="card hover:shadow-lg transition-shadow duration-200">
+
+                <div className="h-40 bg-gray-200"></div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-lg mb-1">{recipe.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    {recipe.cooking_time} mins | {recipe.meal_type}
+                  </p>
+                </div>
+
               </Link>
             ))
           ) : (

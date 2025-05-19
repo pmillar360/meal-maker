@@ -62,7 +62,6 @@ export default function Recipes() {
           {showFilters ? 'Hide Filters' : 'Show Filters'}
         </button>
       </div>
-
       {/* Filters */}
       {showFilters && (
         <div className="card p-4 mb-6">
@@ -133,7 +132,6 @@ export default function Recipes() {
           </div>
         </div>
       )}
-
       {/* Recipe Grid */}
       {loading ? (
         <div className="text-center py-8">
@@ -142,23 +140,26 @@ export default function Recipes() {
       ) : recipes.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {recipes.map(recipe => (
-            <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
-              <a className="card hover:shadow-lg transition-shadow duration-200">
-                <div className="h-48 bg-gray-200"></div>
-                <div className="p-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-lg">{recipe.title}</h3>
-                    <span className="px-2 py-1 bg-gray-100 text-xs rounded-full">
-                      {recipe.meal_type}
-                    </span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500 mt-2">
-                    <span>{recipe.cooking_time} mins</span>
-                    <span className="mx-2">•</span>
-                    <span>{recipe.servings} servings</span>
-                  </div>
+            <Link
+              key={recipe.id}
+              href={`/recipes/${recipe.id}`}
+              className="card hover:shadow-lg transition-shadow duration-200">
+
+              <div className="h-48 bg-gray-200"></div>
+              <div className="p-4">
+                <div className="flex justify-between items-start">
+                  <h3 className="font-semibold text-lg">{recipe.title}</h3>
+                  <span className="px-2 py-1 bg-gray-100 text-xs rounded-full">
+                    {recipe.meal_type}
+                  </span>
                 </div>
-              </a>
+                <div className="flex items-center text-sm text-gray-500 mt-2">
+                  <span>{recipe.cooking_time} mins</span>
+                  <span className="mx-2">•</span>
+                  <span>{recipe.servings} servings</span>
+                </div>
+              </div>
+
             </Link>
           ))}
         </div>
