@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
-export default function SearchBar({ onSearch, placeholder = "Search..." }) {
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+  placeholder?: string;
+}
+
+export default function SearchBar({ onSearch, placeholder = "Search..." }: SearchBarProps) {
   const [query, setQuery] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSearch(query);
   };
@@ -31,4 +36,4 @@ export default function SearchBar({ onSearch, placeholder = "Search..." }) {
       </div>
     </form>
   );
-} 
+}
