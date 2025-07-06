@@ -153,22 +153,20 @@ export default function Recipes() {
           recipes.map(recipe => (
             <div key={recipe.id} className="bg-white rounded-lg shadow-md overflow-hidden">
               <Link href={`/recipes/${recipe.id}`}>
-                <a>
-                  <div className="relative">
-                    <img
-                      src={`/images/recipes/${recipe.id}.jpg`}
-                      alt={recipe.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black opacity-30"></div>
-                    <div className="absolute bottom-0 left-0 p-4">
-                      <h3 className="text-white text-lg font-semibold">{recipe.title}</h3>
-                      <p className="text-white text-sm">
-                        {recipe.servings} servings • {recipe.cooking_time} min
-                      </p>
-                    </div>
+                <div className="relative">
+                  <img
+                    src={`/images/recipes/${recipe.id}.jpg`}
+                    alt={recipe.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black opacity-30"></div>
+                  <div className="absolute bottom-0 left-0 p-4">
+                    <h3 className="text-white text-lg font-semibold">{recipe.title}</h3>
+                    <p className="text-white text-sm">
+                      {recipe.servings} servings • {recipe.cooking_time} min
+                    </p>
                   </div>
-                </a>
+                </div>
               </Link>
             </div>
           ))
