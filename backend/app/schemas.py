@@ -9,7 +9,7 @@ class Diet(DietBase):
     id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class IngredientBase(BaseModel):
     name: str
@@ -19,7 +19,7 @@ class Ingredient(IngredientBase):
     id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class RecipeBase(BaseModel):
     title: str
@@ -32,7 +32,7 @@ class Recipe(RecipeBase):
     id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class RecipeDetail(RecipeBase):
     id: int
@@ -41,7 +41,7 @@ class RecipeDetail(RecipeBase):
     diets: List[Diet] = []
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ShoppingListItemBase(BaseModel):
     name: str
@@ -55,7 +55,7 @@ class ShoppingListItem(ShoppingListItemBase):
     completed: bool
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ShoppingListItemUpdate(BaseModel):
     quantity: Optional[str] = None
