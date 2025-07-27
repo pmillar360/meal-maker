@@ -46,6 +46,12 @@ export const getRecipes = async (filters: {
   return response.data;
 };
 
+export const getExternalRecipes = async(params = {}) => {
+  const queryParams = new URLSearchParams(params).toString();
+  const response = await api.get(`/external-recipes/?${queryParams}`);
+  return response.data;
+};
+
 export const getRecipeById = async (id: number | string): Promise<Recipe> => {
   const response = await api.get(`/recipes/${id}`);
   return response.data;

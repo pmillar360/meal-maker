@@ -6,6 +6,7 @@ import os
 
 from . import models, schemas, crud
 from .database import engine, SessionLocal
+from util.spoonacular import search_recipes
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -53,6 +54,15 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     if recipe is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
     return recipe
+
+@app.get("/external-recipes/")
+def get_external_recipes(
+    query: str = "",
+    ingredients: str = "",
+    number: int = 10,
+):
+    ingredients_list = ingredients.split(",") if ingredients else None
+    return search_recipes(query, ingredients_list, number)
 
 @app.get("/ingredients/", response_model=List[schemas.Ingredient])
 def get_all_ingredients(db: Session = Depends(get_db)):

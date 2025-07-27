@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getRecipes, getAllIngredients } from '../../services/api';
+import { getRecipes, getAllIngredients, getExternalRecipes } from '../../services/api';
 import Link from 'next/link';
 import { FaFilter, FaTimes } from 'react-icons/fa';
 
@@ -11,6 +11,7 @@ interface Ingredient {
 interface Recipe {
   id: number;
   title: string;
+  ingredients: string[];
   cooking_time: number;
   servings: number;
   meal_type: string;
@@ -36,10 +37,20 @@ export default function Recipes() {
       setLoading(true);
       try {
         const [recipesData, ingredientsData] = await Promise.all([
-          getRecipes(filters),
+          // getRecipes(filters),
+          getExternalRecipes(),
           getAllIngredients()
         ]);
-        setRecipes(recipesData);
+
+        const spRecipes = Array.isArray(recipesData)
+          ? recipesData
+          : recipesData.results || [];
+
+        const mappedRecipes = spRecipes.map((r: any) => ({
+          id: r.id,
+        }))
+
+        // setRecipes(recipesData);
         setIngredients(ingredientsData);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -49,6 +60,7 @@ export default function Recipes() {
     };
     fetchData();
   }, [filters]);
+
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
