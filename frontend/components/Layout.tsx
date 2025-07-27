@@ -1,10 +1,13 @@
-import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { ReactNode } from 'react';
 
-export default function Layout({ children }) {
+interface LayoutProps {
+  children: ReactNode;
+}
+
+export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
-  
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
@@ -20,35 +23,32 @@ export default function Layout({ children }) {
                 <Link
                   href="/"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname === '/' 
-                      ? 'border-primary text-gray-900' 
+                    router.pathname === '/'
+                      ? 'border-primary text-gray-900'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}>
-                  
-                    Home
-                  
+                  }`}
+                >
+                  Home
                 </Link>
                 <Link
                   href="/recipes"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname.startsWith('/recipes') 
-                      ? 'border-primary text-gray-900' 
+                    router.pathname.startsWith('/recipes')
+                      ? 'border-primary text-gray-900'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}>
-                  
-                    Recipes
-                  
+                  }`}
+                >
+                  Recipes
                 </Link>
                 <Link
                   href="/shopping-list"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname === '/shopping-list' 
-                      ? 'border-primary text-gray-900' 
+                    router.pathname === '/shopping-list'
+                      ? 'border-primary text-gray-900'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}>
-                  
-                    Shopping List
-                  
+                  }`}
+                >
+                  Shopping List
                 </Link>
               </nav>
             </div>

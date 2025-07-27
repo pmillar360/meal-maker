@@ -2,14 +2,23 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getRecipes } from '../services/api';
 
+interface Recipe {
+  id: number;
+  title: string;
+  cooking_time: number;
+  servings: number;
+  meal_type: string;
+  diets?: { id: number; name: string }[];
+}
+
 export default function Home() {
-  const [featuredRecipes, setFeaturedRecipes] = useState([]);
+  const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadFeaturedRecipes = async () => {
       try {
-        const recipes = await getRecipes({ limit: 3 });
+        const recipes = await getRecipes({ limit: 3 } as any);
         setFeaturedRecipes(recipes);
       } catch (error) {
         console.error("Failed to load featured recipes:", error);
@@ -17,7 +26,6 @@ export default function Home() {
         setLoading(false);
       }
     };
-
     loadFeaturedRecipes();
   }, []);
 
@@ -96,4 +104,4 @@ export default function Home() {
       </section>
     </div>
   );
-} 
+}

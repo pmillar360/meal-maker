@@ -1,8 +1,21 @@
-import React from 'react';
 import Link from 'next/link';
 import { FiClock, FiUsers } from 'react-icons/fi';
 
-export default function RecipeCard({ recipe }) {
+// Renamed to .tsx and added TypeScript types for props
+interface Recipe {
+  id: number;
+  title: string;
+  cooking_time: number;
+  servings: number;
+  meal_type: string;
+  diets?: { id: number; name: string }[];
+}
+
+interface RecipeCardProps {
+  recipe: Recipe;
+}
+
+export default function RecipeCard({ recipe }: RecipeCardProps) {
   return (
     <div className="card hover:shadow-lg transition-shadow duration-300">
       <div className="p-4">
@@ -30,10 +43,9 @@ export default function RecipeCard({ recipe }) {
         <div className="mt-4">
           <Link
             href={`/recipes/${recipe.id}`}
-            className="text-primary hover:text-primary-dark font-medium">
-            
-              View Recipe
-            
+            className="text-primary hover:text-primary-dark font-medium"
+          >
+            View Recipe
           </Link>
         </div>
       </div>

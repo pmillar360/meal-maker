@@ -1,5 +1,15 @@
-import { useState, useEffect } from 'react';
-import { FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaTimes } from 'react-icons/fa';
+// Renamed to .tsx and added TypeScript types for props
+import { ReactNode, useEffect, useState } from 'react';
+import { FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaTimes } from 'react-icons/fa';
+
+interface AlertProps {
+  message: ReactNode;
+  variant?: 'info' | 'success' | 'warning' | 'error';
+  dismissible?: boolean;
+  autoClose?: boolean;
+  autoCloseTime?: number;
+  onClose?: () => void;
+}
 
 const VARIANTS = {
   info: {
@@ -35,7 +45,7 @@ export default function Alert({
   autoClose = false,
   autoCloseTime = 5000,
   onClose
-}) {
+}: AlertProps) {
   const [visible, setVisible] = useState(true);
   const { icon: Icon, bgColor, textColor, iconColor } = VARIANTS[variant] || VARIANTS.info;
 
@@ -44,7 +54,6 @@ export default function Alert({
       const timer = setTimeout(() => {
         handleClose();
       }, autoCloseTime);
-      
       return () => clearTimeout(timer);
     }
   }, [autoClose, autoCloseTime, visible]);
@@ -68,10 +77,11 @@ export default function Alert({
         <button 
           onClick={handleClose}
           className={`${textColor} hover:bg-opacity-20 hover:bg-gray-500 p-1 rounded-full flex items-center justify-center ml-4`}
+          title="Close"
         >
           <FaTimes size={14} />
         </button>
       )}
     </div>
   );
-} 
+}
