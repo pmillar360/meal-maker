@@ -64,3 +64,4 @@ Thumbs.db
 /frontend/.next
 backend/.coverage
 .coverage
+notes.todo

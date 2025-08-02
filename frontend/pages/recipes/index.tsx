@@ -37,20 +37,11 @@ export default function Recipes() {
       setLoading(true);
       try {
         const [recipesData, ingredientsData] = await Promise.all([
-          // getRecipes(filters),
-          getExternalRecipes(),
+          getRecipes(filters),
           getAllIngredients()
         ]);
 
-        const spRecipes = Array.isArray(recipesData)
-          ? recipesData
-          : recipesData.results || [];
-
-        const mappedRecipes = spRecipes.map((r: any) => ({
-          id: r.id,
-        }))
-
-        // setRecipes(recipesData);
+        setRecipes(recipesData as Recipe[]);
         setIngredients(ingredientsData);
       } catch (error) {
         console.error("Error fetching data:", error);

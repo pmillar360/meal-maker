@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from ..app import models
 from ..app.database import engine, SessionLocal
+from spoonacular import search_ingredients, search_recipes
 
 def seed_diets(db: Session):
     """Seed dietary preferences"""
@@ -150,6 +151,47 @@ def seed_recipes(db: Session, ingredients):
             
             db.add(recipe)
     
+    db.commit()
+
+def map_recipes(recipe):
+    new_recipe = models.Recipe()
+
+    new_recipe.id = recipe.id
+    new_recipe.title = recipe.title
+    # new_recipe.image = recipe.image // TODO image is not implemented yet?
+
+    return new_recipe
+
+def seed_api_recipes(db: Session):
+    recipes = search_recipes(number=100)
+
+    mappedRecipes = map(map_recipes, recipes)
+
+    for new_recipe in mappedRecipes:
+        recipe = db.query(models.Recipe).filter(models.Recipe.title == new_recipe["title"]).first()
+        if not recipe:
+            db.add(recipe)
+            
+    db.commit()
+
+def map_ingredients(ingredient):
+    new_ingredient = models.Ingredient()
+
+    new_ingredient.id = ingredient.id
+    new_ingredient.name = ingredient.name
+    # new_ingredient.recipes = // TODO Do ingredients have recipes associated with them?
+    return new_ingredient
+
+def seed_api_ingredients(db: Session):
+    ingredients = search_ingredients(number=100)
+
+    mappedIngredients = map(map_ingredients, ingredients)
+
+    for new_ingredient in mappedIngredients:
+        ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == new_ingredient["name"]).first()
+        if not ingredient:
+            db.add(ingredient)
+
     db.commit()
 
 def main():
