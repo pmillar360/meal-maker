@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from ..app import models
-from ..app.database import engine, SessionLocal
-from spoonacular import search_ingredients, search_recipes
+from app import models
+from app.database import engine, SessionLocal
+from util.spoonacular import search_ingredients, search_recipes
 
 def seed_diets(db: Session):
     """Seed dietary preferences"""
