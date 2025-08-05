@@ -58,7 +58,7 @@ def update_shopping_list_item(db: Session, item_id: int, item_update: schemas.Sh
     """Update shopping list item status or quantity"""
     db_item = db.query(models.ShoppingListItem).filter(models.ShoppingListItem.id == item_id).first()
     if db_item:
-        update_data = item_update.dict(exclude_unset=True)
+        update_data = item_update.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_item, key, value)
         db.commit()
@@ -73,3 +73,17 @@ def delete_shopping_list_item(db: Session, item_id: int):
         db.commit()
         return True
     return False
+
+def add_fridge_item(db: Session, item: schemas.Ingredient):
+    """Add item to fridge"""
+    db_item = models.Ingredient(**item.model_dump())
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+# TODO Need users and user IDs to make the fridge specific to a user
+def get_fridge_items(db: Session, skip: int = 0, limit: int = 100):
+    """Get the items in the fridge"""
+    # TODO return db.query(models.FridgeItem)
+    pass

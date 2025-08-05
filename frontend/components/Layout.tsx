@@ -41,6 +41,16 @@ export default function Layout({ children }: LayoutProps) {
                   Recipes
                 </Link>
                 <Link
+                  href="/ingredients"
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                    router.pathname.startsWith('/ingredients')
+                      ? 'border-primary text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                  >
+                    Ingredients
+                </Link>
+                <Link
                   href="/shopping-list"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 ${
                     router.pathname === '/shopping-list'
@@ -49,6 +59,15 @@ export default function Layout({ children }: LayoutProps) {
                   }`}
                 >
                   Shopping List
+                </Link>
+                <Link
+                  href="/fridge"
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                    router.pathname === '/fridge'
+                      ? 'border-primary text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}>
+                    Fridge
                 </Link>
               </nav>
             </div>

@@ -23,6 +23,7 @@ export interface Recipe {
 export interface Ingredient {
   id: number;
   name: string;
+  category: string;
 }
 
 export interface ShoppingListItem {
@@ -62,6 +63,11 @@ export const getAllIngredients = async (): Promise<Ingredient[]> => {
   const response = await api.get('/ingredients/');
   return response.data;
 };
+
+export const getFridgeIngredients = async (): Promise<Ingredient[]> => {
+  const response = await api.get('/fridge/');
+  return response.data;
+}
 
 // Shopping list API calls
 export const getShoppingList = async (): Promise<ShoppingListItem[]> => {

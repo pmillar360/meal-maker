@@ -77,3 +77,4 @@ class ShoppingListItem(Base):
     name = Column(String, index=True)
     quantity = Column(String, nullable=True)
     completed = Column(Boolean, default=False)
+    category = Column(String)

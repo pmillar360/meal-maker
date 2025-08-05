@@ -11,6 +11,11 @@ class Diet(DietBase):
     class Config:
         from_attributes = True
 
+class IngredientQuantity(BaseModel):
+    amount: float  # or int, but float is more flexible
+    unit: str      # e.g., "g", "ml", "cup", "tbsp", etc.
+
+
 class IngredientBase(BaseModel):
     name: str
     category: Optional[str] = None
@@ -20,6 +25,11 @@ class Ingredient(IngredientBase):
     
     class Config:
         from_attributes = True
+
+# Example usage in a recipe ingredient association:
+class RecipeIngredient(BaseModel):
+    ingredient: Ingredient
+    quantity: Optional[str] = None
 
 class RecipeBase(BaseModel):
     title: str
@@ -44,8 +54,7 @@ class RecipeDetail(RecipeBase):
     class Config:
         from_attributes = True
 
-class ShoppingListItemBase(BaseModel):
-    name: str
+class ShoppingListItemBase(IngredientBase):
     quantity: Optional[str] = None
 
 class ShoppingListItemCreate(ShoppingListItemBase):

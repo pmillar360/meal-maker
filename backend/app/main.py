@@ -95,3 +95,9 @@ def delete_shopping_list_item(item_id: int, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=404, detail="Item not found")
     return True
+
+# Fridge Endpoints
+@app.post("/fridge/", response_model=schemas.Ingredient)
+def create_fridge_item(item: schemas.Ingredient, db: Session = Depends(get_db)):
+    """Add item to fridge"""
+    return crud.add_fridge_item(db, item)
