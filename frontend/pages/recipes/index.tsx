@@ -110,14 +110,14 @@ export default function Recipes() {
         </div>
 
         {/* Filter and clear buttons */}
-        <div className="flex mt-4 md:mt-0">
-          <button
+        <div className="flex mt-4 md:mt-0 ms-4">
+          {/* <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center px-4 py-2 mr-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-md hover:bg-blue-700"
           >
             <FaFilter className="mr-2" />
             {showFilters ? 'Hide Filters' : 'Show Filters'}
-          </button>
+          </button> */}
           <button
             onClick={clearFilters}
             className="flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md shadow-md hover:bg-red-700"
