@@ -44,7 +44,7 @@ def get_all_ingredients(db: Session):
 
 def add_shopping_list_item(db: Session, item: schemas.ShoppingListItemCreate):
     """Add item to shopping list"""
-    db_item = models.ShoppingListItem(**item.dict())
+    db_item = models.ShoppingListItem(**item.model_dump())
     db.add(db_item)
     db.commit()
     db.refresh(db_item)

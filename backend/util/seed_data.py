@@ -179,7 +179,7 @@ def map_ingredients(ingredient):
 
     new_ingredient.id = ingredient.id
     new_ingredient.name = ingredient.name
-    # new_ingredient.recipes = // TODO Do ingredients have recipes associated with them?
+    
     return new_ingredient
 
 def seed_api_ingredients(db: Session):

@@ -27,6 +27,7 @@ class RecipeBase(BaseModel):
     cooking_time: Optional[int] = None
     servings: Optional[int] = None
     description: Optional[str] = None
+    image_url: Optional[str] = None
 
 class Recipe(RecipeBase):
     id: int

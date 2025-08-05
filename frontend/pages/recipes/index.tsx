@@ -2,21 +2,7 @@ import { useState, useEffect } from 'react';
 import { getRecipes, getAllIngredients, getExternalRecipes } from '../../services/api';
 import Link from 'next/link';
 import { FaFilter, FaTimes } from 'react-icons/fa';
-
-interface Ingredient {
-  id: number;
-  name: string;
-}
-
-interface Recipe {
-  id: number;
-  title: string;
-  ingredients: string[];
-  cooking_time: number;
-  servings: number;
-  meal_type: string;
-  diets?: { id: number; name: string }[];
-}
+import { Ingredient, Recipe } from '../../services/api'
 
 export default function Recipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -158,7 +144,7 @@ export default function Recipes() {
               <Link href={`/recipes/${recipe.id}`}>
                 <div className="relative">
                   <img
-                    src={`/images/recipes/${recipe.id}.jpg`}
+                    src={recipe.image_url}
                     alt={recipe.title}
                     className="w-full h-48 object-cover"
                   />

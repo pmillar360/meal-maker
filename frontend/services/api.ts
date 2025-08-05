@@ -17,6 +17,7 @@ export interface Recipe {
   servings: number;
   meal_type: string;
   diets?: { id: number; name: string }[];
+  image_url: string;
 }
 
 export interface Ingredient {

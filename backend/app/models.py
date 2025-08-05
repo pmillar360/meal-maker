@@ -44,6 +44,7 @@ class Recipe(Base):
     servings = Column(Integer)
     instructions = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
+    image_url = Column(String)
     
     # Relationships
     user = relationship("User", back_populates="recipes")
