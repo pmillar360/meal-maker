@@ -138,7 +138,7 @@ export default function RecipeDetail() {
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold mb-4">Instructions</h2>
                     <div className="prose max-w-none">
-                {recipe.instructions && recipe.instructions.length > 0 ? (
+                {Array.isArray(recipe.instructions) && recipe.instructions.length > 0 ? (
                     <ol className="list-decimal list-inside">
                         {recipe.instructions.map((step, idx) => (
                             <li key={idx} className="mb-2">{step}</li>
