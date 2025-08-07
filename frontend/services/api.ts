@@ -34,13 +34,13 @@ export interface ShoppingListItem {
 
 // Recipe-related API calls
 export const getRecipes = async (filters: {
-  ingredients?: string;
+  ingredients?: Ingredient[];
   mealType?: string;
   diet?: string;
 } = {}): Promise<Recipe[]> => {
   const { ingredients, mealType, diet } = filters;
   let queryParams = new URLSearchParams();
-  if (ingredients) queryParams.append('ingredients', ingredients);
+  if (ingredients) queryParams.append('ingredients', ingredients.map(x => x.name).toString());
   if (mealType) queryParams.append('meal_type', mealType);
   if (diet) queryParams.append('diet', diet);
   const response = await api.get(`/recipes/?${queryParams}`);
