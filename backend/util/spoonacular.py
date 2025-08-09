@@ -21,6 +21,20 @@ def search_recipes(query=None, ingredients=None, number=10):
     response.raise_for_status()
     return response.json()
 
+def get_external_recipe_by_id(id: int):
+    RECIPE_URL = BASE_URL + f"/recipes/{id}/information"
+    params = {
+        "apiKey": SPOONACULAR_API_KEY,
+        "includeNutrition": False,
+        "addWinePairing": False,
+        "addTasteData": False,
+    }
+
+    response = requests.get(RECIPE_URL, params=params)
+    response.raise_for_status()
+
+    return response.json()
+
 def search_ingredients(query=None, number=10):
     INGREDIENT_URL = BASE_URL + "/food/ingredients/search"
 

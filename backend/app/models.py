@@ -4,14 +4,15 @@ from sqlalchemy.orm import relationship
 from .database import Base
 
 # Association table for recipes and ingredients
-recipe_ingredient = Table(
-    "recipe_ingredient",
-    Base.metadata,
-    Column("recipe_id", Integer, ForeignKey("recipes.id")),
-    Column("ingredient_id", Integer, ForeignKey("ingredients.id")),
-    Column("quantity", String),
-    Column("unit", String),
-)
+class RecipeIngredient(Base):
+    __tablename__ = "recipe_ingredient"
+    recipe_id = Column(Integer, ForeignKey("recipes.id"), primary_key=True)
+    ingredient_id = Column(Integer, ForeignKey("ingredients.id"), primary_key=True)
+    quantity = Column(String)
+    unit = Column(String)
+
+    recipe = relationship("Recipe", back_populates="recipe_ingredients")
+    ingredient = relationship("Ingredient", back_populates="ingredient_recipes")
 
 # Association table for recipes and dietary restrictions
 recipe_diet = Table(
@@ -45,10 +46,13 @@ class Recipe(Base):
     instructions = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
     image_url = Column(String)
+
+    # Spoonacular
+    spoonacular_id = Column(Integer, unique=True, index=True)
     
     # Relationships
     user = relationship("User", back_populates="recipes")
-    ingredients = relationship("Ingredient", secondary=recipe_ingredient, back_populates="recipes")
+    recipe_ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
     diets = relationship("Diet", secondary=recipe_diet, back_populates="recipes")
 
 class Ingredient(Base):
@@ -57,9 +61,11 @@ class Ingredient(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, unique=True)
     category = Column(String, index=True)
+
+    spoonacular_id = Column(Integer, unique=True, index=True)
     
     # Relationships
-    recipes = relationship("Recipe", secondary=recipe_ingredient, back_populates="ingredients")
+    ingredient_recipes = relationship("RecipeIngredient", back_populates="ingredient", cascade="all, delete-orphan")
 
 class Diet(Base):
     __tablename__ = "diets"

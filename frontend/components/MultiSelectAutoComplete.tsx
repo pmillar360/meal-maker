@@ -66,7 +66,6 @@ export default function MultiSelectAutoComplete({ options, selectedOptions, onCh
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        onDoubleClick={() => setInput(" ")} // TODO This doesn't really work as intended, want to show all ingredients
         onKeyDown={handleKeyDown}
         className="border p-2 w-full rounded-md text-sm form-input"
         placeholder="Type to search..."

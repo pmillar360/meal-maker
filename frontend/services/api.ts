@@ -18,11 +18,27 @@ export interface Recipe {
   meal_type: string;
   diets?: { id: number; name: string }[];
   image_url: string;
+  instructions: string; // TODO: Should this be a string or list of strings?
+  instructionSteps: string[];
+  recipe_ingredients: RecipeIngredient[];
+  description: string;
 }
+
+export const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack']; // TODO not sure what to do with these long term, do we store this in db?  
+export const dietTypes = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free'];
+
 
 export interface Ingredient {
   id: number;
   name: string;
+  category?: string;
+  spoonacular_id?: number;
+}
+
+export interface RecipeIngredient {
+  ingredient: Ingredient;
+  quantity: string;
+  unit: string;
 }
 
 export interface ShoppingListItem {

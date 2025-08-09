@@ -1,10 +1,88 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List, Optional
 from . import models, schemas
 
 def get_recipe(db: Session, recipe_id: int):
     """Get a single recipe by id with all details"""
-    return db.query(models.Recipe).filter(models.Recipe.id == recipe_id).first()
+    return db.query(models.Recipe).filter(
+    or_(
+        models.Recipe.id == recipe_id,
+        models.Recipe.spoonacular_id == recipe_id
+    )
+).first()
+
+
+def create_local_recipe_from_spoonacular(db: Session, data: dict):
+    """Given an external object, convert to local db model"""
+    recipe = (
+        db.query(models.Recipe)
+        .filter(models.Recipe.spoonacular_id == data["id"])
+        .first()
+    )
+
+    if recipe:
+        recipe.title = data["title"]
+        recipe.image_url = data["image"]
+        recipe.description = data["summary"]
+        recipe.servings = data["servings"]
+        recipe.cooking_time = data["readyInMinutes"]
+
+    else:
+        recipe = models.Recipe(
+            title=data["title"],
+            image_url=data["image"],
+            description=data["summary"],
+            servings=data["servings"],
+            spoonacular_id=data["id"],
+            cooking_time=data["readyInMinutes"],
+        )
+        db.add(recipe)
+    
+    for ingredientData in data["extendedIngredients"]:
+        ingredient = create_local_ingredients_from_spoonacular_recipe(db, ingredientData, False)
+
+        recipeIngredient = models.RecipeIngredient(
+            ingredient = ingredient,
+            quantity=str(ingredientData["amount"]),
+            unit=ingredientData["unit"]
+        )
+
+        recipe.recipe_ingredients.append(recipeIngredient)
+
+    db.commit()
+    db.refresh(recipe)
+
+    return recipe
+
+
+def create_local_ingredients_from_spoonacular_recipe(db: Session, data: dict, commit: bool = True):
+    """Given a list of ingredients for a recipe, convert to the local `Ingredient` model"""
+    ingredient = (
+        db.query(models.Ingredient)
+        .filter(models.Ingredient.spoonacular_id == data["id"])
+        .first()
+    )
+
+    if ingredient:
+        ingredient.name = data["name"]
+        ingredient.category = data["aisle"]
+    else:
+        ingredient = models.Ingredient(
+            name=data["name"],
+            category=data["aisle"],
+            spoonacular_id=data["id"]
+        )
+
+        db.add(ingredient)
+    
+    if commit:
+        db.commit()
+        db.refresh(ingredient)
+    else:
+        db.flush()
+
+    return ingredient
 
 def get_recipes(
     db: Session, 
@@ -34,7 +112,7 @@ def get_recipes(
                 models.Ingredient.name.ilike(f"%{ingredient_name.strip()}%")
             ).first()
             if ingredient:
-                query = query.filter(models.Recipe.ingredients.contains(ingredient))
+                query = query.join(models.Recipe.recipe_ingredients).filter(models.RecipeIngredient.ingredient_id == ingredient.id)
     
     return query.offset(skip).limit(limit).all()
 
@@ -58,7 +136,7 @@ def update_shopping_list_item(db: Session, item_id: int, item_update: schemas.Sh
     """Update shopping list item status or quantity"""
     db_item = db.query(models.ShoppingListItem).filter(models.ShoppingListItem.id == item_id).first()
     if db_item:
-        update_data = item_update.dict(exclude_unset=True)
+        update_data = item_update.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_item, key, value)
         db.commit()

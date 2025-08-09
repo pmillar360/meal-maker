@@ -6,7 +6,7 @@ import os
 
 from . import models, schemas, crud
 from .database import engine, SessionLocal
-from util.spoonacular import search_recipes
+from util.spoonacular import get_external_recipe_by_id, search_recipes
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -50,10 +50,22 @@ def get_recipes(
 @app.get("/recipes/{recipe_id}", response_model=schemas.RecipeDetail)
 def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     """Get detailed information for a specific recipe"""
+
+    # TODO Need to add lastUpdated to get external if beyond a certain date/time
     recipe = crud.get_recipe(db, recipe_id)
-    if recipe is None:
+
+    if recipe:
+        return recipe
+
+    # TODO Log when API reqest is made here
+    external_data = get_external_recipe_by_id(recipe_id)
+
+    # If recipe cannot be found locally or via API return non found
+    if external_data is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
-    return recipe
+
+    newRecipe = crud.create_local_recipe_from_spoonacular(db, external_data)
+    return newRecipe
 
 @app.get("/external-recipes/")
 def get_external_recipes(

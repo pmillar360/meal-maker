@@ -14,10 +14,21 @@ class Diet(DietBase):
 class IngredientBase(BaseModel):
     name: str
     category: Optional[str] = None
+    spoonacular_id: Optional[int] = None
 
 class Ingredient(IngredientBase):
     id: int
     
+    class Config:
+        from_attributes = True
+
+class RecipeIngredientBase(BaseModel):
+    quantity: Optional[str] = None
+    unit: Optional[str] = None
+
+class RecipeIngredient(RecipeIngredientBase):
+    ingredient: Ingredient
+
     class Config:
         from_attributes = True
 
@@ -38,7 +49,7 @@ class Recipe(RecipeBase):
 class RecipeDetail(RecipeBase):
     id: int
     instructions: Optional[str] = None
-    ingredients: List[Ingredient] = []
+    recipe_ingredients: List[RecipeIngredient] = []
     diets: List[Diet] = []
     
     class Config:

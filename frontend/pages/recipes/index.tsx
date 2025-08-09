@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getRecipes, getAllIngredients } from '../../services/api';
+import { getRecipes, getAllIngredients, mealTypes, dietTypes } from '../../services/api';
 import Link from 'next/link';
 import { FaFilter, FaTimes } from 'react-icons/fa';
 import { Ingredient, Recipe } from '../../services/api'
@@ -15,9 +15,6 @@ export default function Recipes() {
     diet: '',
   });
   const [showFilters, setShowFilters] = useState(true);
-
-  const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
-  const dietTypes = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free'];
 
   type Filters = {
     ingredients: Ingredient[];
@@ -52,12 +49,12 @@ export default function Recipes() {
   };
 
   const handleIngredientFilterChange = (e: Option[]) => {
-    const ingredientsA = e.map(ingredient => ({
+    const mappedIngredients = e.map(ingredient => ({
       id: ingredient.id,
       name: ingredient.label,
     }))
 
-    setFilters((prev) => ({ ...prev, ingredients: ingredientsA }));
+    setFilters((prev) => ({ ...prev, ingredients: mappedIngredients }));
   }
 
   const clearFilters = () => {
