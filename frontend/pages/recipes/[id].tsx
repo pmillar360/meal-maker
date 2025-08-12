@@ -110,6 +110,7 @@ export default function RecipeDetail() {
                             {recipe.recipe_ingredients.map(ingredient => (
                                 <li key={ingredient.ingredient.id} className="flex justify-between items-center py-2">
                                     <span className="text-gray-700">{ingredient.ingredient.name}</span>
+                                    <span>{ingredient.quantity} {ingredient.unit}</span>
                                     <button
                                         onClick={() => handleAddToShoppingList(ingredient.ingredient)}
                                         className={`ml-4 px-3 py-1 rounded-lg text-white focus:outline-none ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'

@@ -10,6 +10,7 @@ export default function Home() {
     const loadFeaturedRecipes = async () => {
       try {
         const recipes = await getRecipes({ limit: 3 } as any);
+        // const recipes = await getFeaturedRecipes({ limit: 3} as Recipe[]);
         setFeaturedRecipes(recipes);
       } catch (error) {
         console.error("Failed to load featured recipes:", error);

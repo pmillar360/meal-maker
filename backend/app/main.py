@@ -3,10 +3,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
+import logging
 
 from . import models, schemas, crud
 from .database import engine, SessionLocal
 from util.spoonacular import get_external_recipe_by_id, search_recipes
+
+# Initialize logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+logger = logging.getLogger(__name__);
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -57,10 +67,10 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     if recipe:
         return recipe
 
-    # TODO Log when API reqest is made here
+    logger.info(f"Making external API request for recipe ID: {recipe_id}")
     external_data = get_external_recipe_by_id(recipe_id)
 
-    # If recipe cannot be found locally or via API return non found
+    # If recipe cannot be found locally or via API return not found
     if external_data is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
@@ -75,6 +85,13 @@ def get_external_recipes(
 ):
     ingredients_list = ingredients.split(",") if ingredients else None
     return search_recipes(query, ingredients_list, number)
+
+@app.get("/recipes/featured/", response_model=List[schemas.Recipe])
+def get_featured_recipes(
+    number: int = 3,
+):
+    return []
+    # TODO Get random recipes from Spoonacular
 
 @app.get("/ingredients/", response_model=List[schemas.Ingredient])
 def get_all_ingredients(db: Session = Depends(get_db)):

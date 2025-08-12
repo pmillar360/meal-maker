@@ -18,7 +18,7 @@ export interface Recipe {
   meal_type: string;
   diets?: { id: number; name: string }[];
   image_url: string;
-  instructions: string; // TODO: Should this be a string or list of strings?
+  instructions: string;
   instructionSteps: string[];
   recipe_ingredients: RecipeIngredient[];
   description: string;
@@ -68,6 +68,11 @@ export const getExternalRecipes = async(params = {}) => {
   const response = await api.get(`/external-recipes/?${queryParams}`);
   return response.data;
 };
+
+export const getFeaturedRecipes = async(): Promise<Recipe[]> => {
+  const response = await api.get(`/recipes/featured/`);
+  return response.data;
+}
 
 export const getRecipeById = async (id: number | string): Promise<Recipe> => {
   const response = await api.get(`/recipes/${id}`);

@@ -31,7 +31,7 @@ export default function Recipes() {
           getAllIngredients()
         ]);
 
-        setRecipes(recipesData as Recipe[]);
+        setRecipes(recipesData);
         setIngredients(ingredientsData);
       } catch (error) {
         console.error("Error fetching data:", error);
