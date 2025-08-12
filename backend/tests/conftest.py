@@ -1,3 +1,6 @@
+import os
+os.environ["DATABASE_URL"] = "sqlite:///../test_db2.db" # This line stops the generation of the mealmaker db file in the project root, if this is set to a file it will be created
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -125,4 +128,4 @@ def test_shopping_list_item(db_session):
     db_session.add(item)
     db_session.commit()
     db_session.refresh(item)
-    return item 
+    return item
