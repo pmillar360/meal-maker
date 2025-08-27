@@ -49,3 +49,17 @@ def search_ingredients(query=None, number=10):
     response = requests.get(INGREDIENT_URL, params=params)
     response.raise_for_status()
     return response.json()
+
+def get_random_recipes(number=3):
+    REQ_URL = BASE_URL + "/recipes/random"
+
+    params = {
+        "apiKey": SPOONACULAR_API_KEY,
+        "includeNutrition": False,
+        "number": number,
+    }
+
+    respone = requests.get(REQ_URL, params=params)
+    respone.raise_for_status()
+    
+    return respone.json()

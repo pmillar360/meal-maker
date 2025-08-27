@@ -12,6 +12,10 @@ def get_recipe(db: Session, recipe_id: int):
     )
 ).first()
 
+def get_featured_recipes(db: Session, number: int):
+    """Get a set number of \"random\" recipes from the database"""
+
+    return get_recipes(db, ingredients=[], limit=number) # TODO For now just return the first items from the database. In the future we want to pick random numbers
 
 def create_local_recipe_from_spoonacular(db: Session, data: dict):
     """Given an external object, convert to local db model"""

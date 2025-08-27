@@ -7,7 +7,7 @@ import logging
 
 from . import models, schemas, crud
 from .database import engine, SessionLocal
-from util.spoonacular import get_external_recipe_by_id, search_recipes
+from util.spoonacular import get_external_recipe_by_id, search_recipes, get_random_recipes
 
 # Initialize logging
 logging.basicConfig(
@@ -83,15 +83,21 @@ def get_external_recipes(
     ingredients: str = "",
     number: int = 10,
 ):
+    """Get recipes for the specified ingredients by making an API request"""
     ingredients_list = ingredients.split(",") if ingredients else None
     return search_recipes(query, ingredients_list, number)
 
-@app.get("/recipes/featured/", response_model=List[schemas.Recipe])
+@app.get("/recipes/featured/", response_model=List[schemas.RecipeDetail])
 def get_featured_recipes(
-    number: int = 3,
+    number: int = 3, # NOTE Not 100% sure if exposing this is needed but it's fine for now
+    db: Session = Depends(get_db),
+    makeApiRequest = False, # TODO Need better way to detect if we're testing, check if something is dev
 ):
-    return []
-    # TODO Get random recipes from Spoonacular
+    """Get a number of featured recipes"""
+    if makeApiRequest is False:
+        return crud.get_featured_recipes(db, number=number)
+    
+    return get_random_recipes(number)
 
 @app.get("/ingredients/", response_model=List[schemas.Ingredient])
 def get_all_ingredients(db: Session = Depends(get_db)):
