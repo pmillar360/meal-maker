@@ -1,0 +1,18 @@
+version: '3.9'
+services:
+  backend:
+    build: ./backend
+    container_name: meal-maker-backend
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    # restart: unless-stopped # Disable this for now to prevent potential excessive api calls?
+
+  frontend:
+    build: ./frontend
+    container_name: meal-maker-frontend
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
