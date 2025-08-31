@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getRecipeById, addShoppingListItem, Ingredient, Recipe } from '../../services/api';
+import { getRecipeById, addShoppingListItem, Ingredient, Recipe, RecipeIngredient } from '../../services/api';
 import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaUtensils, FaList, FaCheck } from 'react-icons/fa';
 
@@ -32,12 +32,12 @@ export default function RecipeDetail() {
         fetchRecipe();
     }, [id]);
 
-    const handleAddToShoppingList = async (ingredient: Ingredient) => {
-        if (addedItems.includes(ingredient.id)) return;
+    const handleAddToShoppingList = async (ingredient: RecipeIngredient) => {
+        if (addedItems.includes(ingredient.ingredient.id)) return;
         setAddingToList(true);
         try {
-            await addShoppingListItem({ name: ingredient.name, quantity: "1" });
-            setAddedItems(prev => [...prev, ingredient.id]);
+            await addShoppingListItem({ name: ingredient.ingredient.name, quantity: ingredient.quantity + " " + ingredient.unit });
+            setAddedItems(prev => [...prev, ingredient.ingredient.id]);
         } catch (error) {
             console.error("Error adding to shopping list:", error);
         } finally {
@@ -112,7 +112,7 @@ export default function RecipeDetail() {
                                     <span className="text-gray-700">{ingredient.ingredient.name}</span>
                                     <span>{ingredient.quantity} {ingredient.unit}</span>
                                     <button
-                                        onClick={() => handleAddToShoppingList(ingredient.ingredient)}
+                                        onClick={() => handleAddToShoppingList(ingredient)}
                                         className={`ml-4 px-3 py-1 rounded-lg text-white focus:outline-none ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
                                             }`}
                                         disabled={addingToList}
