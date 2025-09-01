@@ -6,7 +6,9 @@ services:
       - "8000"
     ports:
       - "8000:8000"
-    # restart: unless-stopped # Disable this for now to prevent potential excessive api calls?
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped 
 
   frontend:
     build: ./frontend

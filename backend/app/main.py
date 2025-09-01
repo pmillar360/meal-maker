@@ -67,7 +67,7 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     if recipe:
         return recipe
 
-    logger.info(f"Making external API request for recipe ID: {recipe_id}")
+    logger.info(f"Making external API request for spooancular ID: {recipe_id}")
     external_data = get_external_recipe_by_id(recipe_id)
 
     # If recipe cannot be found locally or via API return not found

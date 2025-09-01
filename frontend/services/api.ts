@@ -63,12 +63,6 @@ export const getRecipes = async (filters: {
   return response.data;
 };
 
-export const getExternalRecipes = async(params = {}) => {
-  const queryParams = new URLSearchParams(params).toString();
-  const response = await api.get(`/external-recipes/?${queryParams}`);
-  return response.data;
-};
-
 export const getFeaturedRecipes = async(): Promise<Recipe[]> => {
   const response = await api.get(`/recipes/featured/`);
   return response.data;

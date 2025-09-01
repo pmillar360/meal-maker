@@ -64,7 +64,7 @@ def create_local_ingredients_from_spoonacular_recipe(db: Session, data: dict, co
     """Given a list of ingredients for a recipe, convert to the local `Ingredient` model"""
     ingredient = (
         db.query(models.Ingredient)
-        .filter(models.Ingredient.spoonacular_id == data["id"])
+        .filter(models.Ingredient.spoonacular_id == data["id"] or models.Ingredient.name == data["name"]) #BUG Can crash if not checking for id or name
         .first()
     )
 
@@ -80,6 +80,7 @@ def create_local_ingredients_from_spoonacular_recipe(db: Session, data: dict, co
 
         db.add(ingredient)
     
+    # TODO Why is commit here? Why not commit to db? Why does it need to exist? TOS reason maybe?
     if commit:
         db.commit()
         db.refresh(ingredient)
