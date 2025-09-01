@@ -10,6 +10,7 @@ ENV/
 env.bak/
 *.sqlite3
 *.db
+.pytest_cache
 
 # Alembic
 alembic/versions/__pycache__/
