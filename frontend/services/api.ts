@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Connect to localhost:8000 if NEXT_PUBLIC_API_URL is not provided
+const API_URL = process.env.NEXT_PUBLIC_API_URL 
+  ? `http://${process.env.NEXT_PUBLIC_API_URL}:8000`
+  : 'http://localhost:8000';
+
 
 const api = axios.create({
   baseURL: API_URL,
@@ -56,7 +60,7 @@ export const getRecipes = async (filters: {
 } = {}): Promise<Recipe[]> => {
   const { ingredients, mealType, diet } = filters;
   let queryParams = new URLSearchParams();
-  if (ingredients) queryParams.append('ingredients', ingredients.map(x => x.name).toString());
+  if (ingredients && ingredients.length > 0) queryParams.append('ingredients', ingredients.map(x => x.name).toString());
   if (mealType) queryParams.append('meal_type', mealType);
   if (diet) queryParams.append('diet', diet);
   const response = await api.get(`/recipes/?${queryParams}`);
@@ -66,6 +70,11 @@ export const getRecipes = async (filters: {
 export const getFeaturedRecipes = async(): Promise<Recipe[]> => {
   const response = await api.get(`/recipes/featured/`);
   return response.data;
+}
+
+export const getRandomRecipes = async(): Promise<Recipe[]> => {
+  const response = await api.get(`/recipes/random/`)
+  return response.data
 }
 
 export const getRecipeById = async (id: number | string): Promise<Recipe> => {

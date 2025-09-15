@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getFeaturedRecipes, getRecipes, Recipe } from '../services/api';
+import { getFeaturedRecipes, Recipe } from '../services/api';
 
 export default function Home() {
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
