@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { getRecipes, getAllIngredients, mealTypes, dietTypes, getRandomRecipes } from '../../services/api';
+import { getRecipes, getAllIngredients, mealTypes, dietTypes } from '../../services/api';
 import Link from 'next/link';
 import { FaFilter, FaTimes } from 'react-icons/fa';
-import { Ingredient, getFeaturedRecipes, Recipe } from '../../services/api'
+import { Ingredient, Recipe } from '../../services/api'
 import MultiSelectAutoComplete, {Option} from '../../components/MultiSelectAutoComplete';
 
 export default function Recipes() {

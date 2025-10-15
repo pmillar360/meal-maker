@@ -2,21 +2,18 @@ from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
-import os
-import logging
 
 from . import models, schemas, crud
 from .database import engine, SessionLocal
-from util.spoonacular import get_external_recipe_by_id, search_recipes, get_random_recipes
+from util.spoonacular import get_external_recipe_by_id, search_recipes
+from util.daily_recipes import get_daily_recipes
+
+from util.logger import intialize_logger, get_logger
 
 # Initialize logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+intialize_logger()
 
-logger = logging.getLogger(__name__);
+logger = get_logger()
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -91,13 +88,25 @@ def get_external_recipes(
 def get_featured_recipes(
     number: int = 3, # NOTE Not 100% sure if exposing this is needed but it's fine for now
     db: Session = Depends(get_db),
-    makeApiRequest = False, # TODO Need better way to detect if we're testing, check if something is dev
+    make_api_request: bool = True, # TODO Need better way to detect if we're testing, check if something is dev
 ):
     """Get a number of featured recipes"""
-    if makeApiRequest is False:
+    if make_api_request is False:
         return crud.get_featured_recipes(db, number=number)
     
-    return get_random_recipes(number)
+    recipes = get_daily_recipes()
+
+    # Convert each recipe to RecipeDetail, need to check if the recipe is already in the db?
+    recipeDetails = []
+    for recipe in recipes:
+        local_recipe = crud.get_recipe(db, recipe["id"])
+        if local_recipe:
+            recipeDetails.append(local_recipe)
+        else:
+            newRecipe = crud.create_local_recipe_from_spoonacular(db, recipe)
+            recipeDetails.append(newRecipe)
+
+    return recipeDetails
 
 @app.get("/ingredients/", response_model=List[schemas.Ingredient])
 def get_all_ingredients(db: Session = Depends(get_db)):
