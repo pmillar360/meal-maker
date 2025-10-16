@@ -61,7 +61,7 @@ def client(db_session):
 @pytest.fixture(scope="function")
 def test_user(db_session):
     user = User(
-        email="test@example.com",
+        username="testexample",
         hashed_password="hashedpassword123",
         is_active=True,
         is_superuser=False,

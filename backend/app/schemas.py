@@ -72,3 +72,7 @@ class ShoppingListItem(ShoppingListItemBase):
 class ShoppingListItemUpdate(BaseModel):
     quantity: Optional[str] = None
     completed: Optional[bool] = None
+
+class UserCreate(BaseModel):
+    username: str
+    password: str

@@ -60,6 +60,7 @@ def create_local_recipe_from_spoonacular(db: Session, data: dict):
             servings=data["servings"],
             spoonacular_id=data["id"],
             cooking_time=data["readyInMinutes"],
+            # TODO Add meal_type = data["dish_type"] but need to convert meal type to list?
         )
         db.add(recipe)
 

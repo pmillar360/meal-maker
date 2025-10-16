@@ -2,7 +2,7 @@ from datetime import datetime
 from util.spoonacular import get_random_recipes
 from util.logger import log
 
-CACHE = {}
+CACHE = {} # TODO Need to cache to database for persistence and reduce API requests
 
 def get_daily_recipes():
     today = datetime.date
