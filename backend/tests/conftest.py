@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
-from app.models import User, Recipe, Ingredient, ShoppingListItem, Diet
+from app.models import MealType, User, Recipe, Ingredient, ShoppingListItem, Diet
 
 # Create test database URL
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -84,19 +84,30 @@ def test_diet(db_session):
     return diet
 
 @pytest.fixture(scope="function")
-def test_recipe(db_session, test_user, test_diet):
+def test_meal_type(db_session):
+    meal_type = MealType(
+        name="Dinner"
+    )
+    db_session.add(meal_type)
+    db_session.commit()
+    db_session.refresh(meal_type)
+    return meal_type
+
+@pytest.fixture(scope="function")
+def test_recipe(db_session, test_user, test_diet, test_meal_type, test_ingredient):
     recipe = Recipe(
         title="Test Recipe",
         description="Test Description",
         instructions="Test Instructions",
-        meal_type="dinner",
         cooking_time=30,
         servings=4,
         user_id=test_user.id,
     )
     db_session.add(recipe)
     db_session.commit()
+
     recipe.diets.append(test_diet)
+    recipe.meal_types.append(test_meal_type)
     db_session.commit()
     db_session.refresh(recipe)
     return recipe
