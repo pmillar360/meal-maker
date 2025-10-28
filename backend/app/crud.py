@@ -1,7 +1,9 @@
+import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from typing import List, Optional
 from . import models, schemas
+from util.spoonacular import get_random_recipes
 
 def get_recipe(db: Session, recipe_id: int):
     """Get a single recipe by id with all details"""
@@ -33,11 +35,59 @@ def get_ingredient(db: Session, ingredient_id: int, ingredient_name: Optional[st
     return query.first()
 
 def get_featured_recipes(db: Session, number: int):
-    """Get a set number of \"random\" recipes from the database"""
+    """Get a set number of \"random\" recipes from the database or Spoonacular API"""
 
-    return get_recipes(db, ingredients=[], limit=number) # TODO For now just return the first items from the database. In the future we want to pick random numbers
+    twenty_four_hours_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
+    featured_recipes = (
+        db.query(models.Recipe)
+        .filter(models.Recipe.is_featured == True, models.Recipe.last_updated >= twenty_four_hours_ago)
+        .limit(number)
+        .all()
+    )
 
-def create_local_recipe_from_spoonacular(db: Session, data: dict):
+
+    if featured_recipes:
+        return featured_recipes # The recipes for the day are cached
+    
+    try:
+        # TODO log fetching recipes from spoonacular
+        random_recipes_result = get_random_recipes(number) # Make API request for random recipes
+
+        if not random_recipes_result["recipes"]:
+            return featured_recipes[:number] # If no recipes found then return old ones
+
+        featured_recipes = (
+            db.query(models.Recipe)
+            .filter(models.Recipe.is_featured == True)
+            .all()
+        )
+
+        for recipe in featured_recipes: # Don't feature old recipes
+            recipe.is_featured = False
+
+        cached_recipes = []
+
+        for recipe in random_recipes_result["recipes"]:
+            try:
+                cached_recipe = create_local_recipe_from_spoonacular(db, recipe, True) # Recipe will be added or updated in the DB
+                cached_recipes.append(cached_recipe)
+            except Exception as e:
+                print(f"Error caching recipe: {e}")
+                continue
+
+        return cached_recipes
+    
+    except Exception as e:
+        print(f"Error fetching featured recipes: {e}")
+
+        return (
+            db.query(models.Recipe)
+            .filter(models.Recipe.is_featured == True)
+            .limit(number)
+            .all()
+        )
+
+def create_local_recipe_from_spoonacular(db: Session, data: dict, is_featured_new: bool = False):
     """Given an external object, convert to local db model"""
     recipe = (
         db.query(models.Recipe)
@@ -51,6 +101,7 @@ def create_local_recipe_from_spoonacular(db: Session, data: dict):
         recipe.description = data["summary"]
         recipe.servings = data["servings"]
         recipe.cooking_time = data["readyInMinutes"]
+        recipe.is_featured = is_featured_new
 
     else:
         recipe = models.Recipe(
@@ -60,9 +111,10 @@ def create_local_recipe_from_spoonacular(db: Session, data: dict):
             servings=data["servings"],
             spoonacular_id=data["id"],
             cooking_time=data["readyInMinutes"],
-            # TODO Add meal_type = data["dish_type"] but need to convert meal type to list?
+            is_featured = is_featured_new,
         )
         db.add(recipe)
+        db.flush()
 
     for ingredientData in data["extendedIngredients"]:
         ingredient = create_local_ingredients_from_spoonacular_recipe(db, ingredientData)
@@ -82,6 +134,40 @@ def create_local_recipe_from_spoonacular(db: Session, data: dict):
             )
 
         recipe.recipe_ingredients.append(recipeIngredient)
+
+    for meal_type in data.get("dishTypes", []):
+        local_meal_type = (
+            db.query(models.MealType)
+            .filter(func.lower(models.MealType.name) == func.lower(meal_type))
+            .first()
+        )
+
+        if local_meal_type is None:
+            local_meal_type = models.MealType(
+                name=meal_type,
+            )
+            db.add(local_meal_type)
+            db.flush()
+
+        recipe.meal_types.append(local_meal_type)
+        pass
+
+    for diet_type in data.get("diets", []):
+        local_diet = (
+            db.query(models.Diet)
+            .filter(func.lower(models.Diet.name) == func.lower(diet_type))
+            .first()
+        )
+
+        if local_diet is None:
+            local_diet = models.Diet(
+                name=diet_type,
+            )
+            db.add(local_diet)
+            db.flush()
+
+        recipe.diets.append(local_diet)
+        pass
 
     db.commit()
     db.refresh(recipe)
@@ -128,7 +214,9 @@ def get_recipes(
     
     # Apply meal type filter
     if meal_type:
-        query = query.filter(models.Recipe.meal_type == meal_type)
+        meal_type_obj = db.query(models.MealType).filter(models.MealType.name == meal_type).first()
+        if meal_type_obj:
+            query = query.filter(models.Recipe.diets.contains(meal_type_obj))
     
     # Apply dietary filter
     if diet:
@@ -150,6 +238,14 @@ def get_recipes(
 def get_all_ingredients(db: Session):
     """Get all ingredients"""
     return db.query(models.Ingredient).all()
+
+def get_all_diets(db: Session):
+    """Get all diets"""
+    return db.query(models.Diet).all()
+
+def get_all_meal_types(db:Session):
+    """Get all meal types"""
+    return db.query(models.MealType).all()
 
 def add_shopping_list_item(db: Session, item: schemas.ShoppingListItemCreate):
     """Add item to shopping list"""

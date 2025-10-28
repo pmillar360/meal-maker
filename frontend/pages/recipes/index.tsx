@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { getRecipes, getAllIngredients, mealTypes, dietTypes } from '../../services/api';
 import Link from 'next/link';
 import { FaFilter, FaTimes } from 'react-icons/fa';
-import { Ingredient, Recipe } from '../../services/api'
-import MultiSelectAutoComplete, {Option} from '../../components/MultiSelectAutoComplete';
+import { Diet, Ingredient, MealType } from '../../services/TypeService';
+import { Recipe } from '../../services/TypeService';
+import MultiSelectAutoComplete, { Option } from '../../components/MultiSelectAutoComplete';
+import { getRecipes, getAllIngredients, getAllMealTypes, getAllDiets } from '../../services/recipeService';
 
 export default function Recipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [mealTypes, setMealTypes] = useState<MealType[]>([]);
+  const [diets, setDiets] = useState<Diet[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     ingredients: [],
@@ -22,17 +25,23 @@ export default function Recipes() {
     diet: string;
   };
 
+  // TODO This is reloading all data every filter change I believe, could be optimized
+  // Need to ensure the ingredients, mealtypes, diets are loaded first, then recipes and filter changes
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [recipesData, ingredientsData] = await Promise.all([
+        const [recipesData, ingredientsData, mealTypesData, dietsData] = await Promise.all([
           getRecipes(filters),
-          getAllIngredients()
+          getAllIngredients(),
+          getAllMealTypes(),
+          getAllDiets(),
         ]);
 
         setRecipes(recipesData);
         setIngredients(ingredientsData);
+        setMealTypes(mealTypesData);
+        setDiets(dietsData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -96,7 +105,7 @@ export default function Recipes() {
           </div>
 
           {/* Meal type filter */}
-          <div className="flex items-center">
+          <div className="flex items-center text-nowrap">
             <label htmlFor="mealType" className="mr-2 text-sm font-medium">Meal Type:</label>
             <select
               id="mealType"
@@ -107,13 +116,13 @@ export default function Recipes() {
             >
               <option value="">All Meal Types</option>
               {mealTypes.map(type => (
-                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                <option key={type.id} value={type.name}>{type.name.charAt(0).toUpperCase() + type.name.slice(1)}</option>
               ))}
             </select>
           </div>
 
           {/* Diet type filter */}
-          <div className="flex items-center">
+          <div className="flex items-center text-nowrap">
             <label htmlFor="diet" className="mr-2 text-sm font-medium">Diet Type:</label>
             <select
               id="diet"
@@ -123,8 +132,8 @@ export default function Recipes() {
               className="p-2 border rounded-md text-sm form-input"
             >
               <option value="">All Diets</option>
-              {dietTypes.map(diet => (
-                <option key={diet} value={diet}>{diet.charAt(0).toUpperCase() + diet.slice(1)}</option>
+              {diets.map(diet => (
+                <option key={diet.id} value={diet.name}>{diet.name.charAt(0).toUpperCase() + diet.name.slice(1)}</option>
               ))}
             </select>
           </div>
@@ -150,7 +159,17 @@ export default function Recipes() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex flex-wrap gap-2 mb-2">
+      {/* TODO Show meal type and diet before ingredient filters */}
+      <div className="flex flex-wrap gap-2 mb-2"> 
+        {showFilters && filters.mealType && (
+          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center">
+            {filters.mealType}
+          </span>)} 
+        {showFilters && filters.diet && (
+          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center">
+            {filters.diet}
+          </span>
+        )}
         {showFilters && filters.ingredients.map((opt) => (
           <span
             key={opt.id}

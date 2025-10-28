@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getFeaturedRecipes, Recipe } from '../services/api';
+import { Recipe } from '../services/TypeService';
+import { getFeaturedRecipes } from '../services/recipeService';
 
 export default function Home() {
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
@@ -9,7 +10,7 @@ export default function Home() {
   useEffect(() => {
     const loadFeaturedRecipes = async () => {
       try {
-        const recipes = await getFeaturedRecipes();
+        const recipes = await getFeaturedRecipes(9);
         setFeaturedRecipes(recipes);
       } catch (error) {
         console.error("Failed to load featured recipes:", error);
@@ -88,7 +89,7 @@ export default function Home() {
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-1">{recipe.title}</h3>
                   <p className="text-sm text-gray-500">
-                    {recipe.cooking_time} mins | {recipe.meal_type}
+                    {recipe.cooking_time} mins | {recipe.meal_types?.map(x => x.name)}
                   </p>
                 </div>
 

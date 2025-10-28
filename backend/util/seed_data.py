@@ -158,7 +158,7 @@ def map_recipes(recipe):
 
     new_recipe.id = recipe.id
     new_recipe.title = recipe.title
-    # new_recipe.image = recipe.image // TODO image is not implemented yet?
+    # new_recipe.image = recipe.image
 
     return new_recipe
 

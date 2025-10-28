@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Ingredient } from "../services/api";
 
 export type Option = {
   id: number;

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 
 # Base schemas
 class DietBase(BaseModel):
@@ -8,6 +9,15 @@ class DietBase(BaseModel):
 class Diet(DietBase):
     id: int
     
+    class Config:
+        from_attributes = True
+
+class MealTypeBase(BaseModel):
+    name: str
+
+class MealType(MealTypeBase):
+    id: int
+
     class Config:
         from_attributes = True
 
@@ -34,11 +44,11 @@ class RecipeIngredient(RecipeIngredientBase):
 
 class RecipeBase(BaseModel):
     title: str
-    meal_type: Optional[str] = None
-    cooking_time: Optional[int] = None
-    servings: Optional[int] = None
-    description: Optional[str] = None
+    meal_types: Optional[List[MealType]] = None
+    diets: Optional[List[Diet]] = []
     image_url: Optional[str] = None
+    is_featured: Optional[bool] = None
+    last_updated: Optional[datetime] = None
 
 class Recipe(RecipeBase):
     id: int
@@ -50,7 +60,9 @@ class RecipeDetail(RecipeBase):
     id: int
     instructions: Optional[str] = None
     recipe_ingredients: List[RecipeIngredient] = []
-    diets: List[Diet] = []
+    cooking_time: Optional[int] = None
+    servings: Optional[int] = None
+    description: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -74,5 +86,9 @@ class ShoppingListItemUpdate(BaseModel):
     completed: Optional[bool] = None
 
 class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class LoginRequest(BaseModel):
     username: str
     password: str

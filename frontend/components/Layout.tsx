@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
+import { loginUser, registerUser, logoutUser, getCurrentUser } from '../services/UserService'
+import UserManagement from './UserManagement';
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,34 +24,32 @@ export default function Layout({ children }: LayoutProps) {
               <nav className="ml-6 flex space-x-8">
                 <Link
                   href="/"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname === '/'
-                      ? 'border-primary text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${router.pathname === '/'
+                    ? 'border-primary text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
                 >
                   Home
                 </Link>
                 <Link
                   href="/recipes"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname.startsWith('/recipes')
-                      ? 'border-primary text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${router.pathname.startsWith('/recipes')
+                    ? 'border-primary text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
                 >
                   Recipes
                 </Link>
                 <Link
                   href="/shopping-list"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname === '/shopping-list'
-                      ? 'border-primary text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${router.pathname === '/shopping-list'
+                    ? 'border-primary text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
                 >
                   Shopping List
                 </Link>
+                <UserManagement />
               </nav>
             </div>
           </div>

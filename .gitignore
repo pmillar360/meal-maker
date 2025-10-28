@@ -12,26 +12,6 @@ env.bak/
 *.db
 .pytest_cache
 
-# Alembic
-alembic/versions/__pycache__/
-alembic/versions/*.pyc
-alembic/versions/*.pyo
-alembic/versions/*.pyd
-alembic/versions/*.pyi
-alembic/versions/*.so
-alembic/versions/*.egg
-alembic/versions/*.egg-info
-alembic/versions/dist
-alembic/versions/build
-alembic/versions/eggs
-alembic/versions/parts
-alembic/versions/bin
-alembic/versions/var
-alembic/versions/sdist
-alembic/versions/develop-eggs
-alembic/versions/.installed.cfg
-alembic/versions/.eggs
-
 # Node.js
 node_modules/
 npm-debug.log*
@@ -65,6 +45,6 @@ Thumbs.db
 /frontend/.next
 backend/.coverage
 .coverage
-notes.todo
 
 .devcontainer
+.notes/

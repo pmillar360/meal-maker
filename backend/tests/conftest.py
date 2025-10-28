@@ -1,4 +1,6 @@
 import os
+from backend.util.auth import hash_password
+
 os.environ["DATABASE_URL"] = "sqlite:///../test_db2.db" # This line stops the generation of the mealmaker db file in the project root, if this is set to a file it will be created
 
 import pytest
@@ -62,7 +64,7 @@ def client(db_session):
 def test_user(db_session):
     user = User(
         username="testexample",
-        hashed_password="hashedpassword123",
+        hashed_password=hash_password("hashedpassword123"),
         is_active=True,
         is_superuser=False,
     )

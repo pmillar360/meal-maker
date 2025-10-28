@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getRecipeById, addShoppingListItem, Ingredient, Recipe, RecipeIngredient } from '../../services/api';
+import { addShoppingListItem } from '../../services/ShoppingListService';
+import { RecipeIngredient } from '../../services/TypeService';
+import { Recipe } from '../../services/TypeService';
 import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaUtensils, FaList, FaCheck } from 'react-icons/fa';
+import { getRecipeById } from '../../services/recipeService';
 
 export default function RecipeDetail() {
     const router = useRouter();
@@ -87,7 +90,7 @@ export default function RecipeDetail() {
                         </div>
                         <div className="flex items-center text-gray-700">
                             <FaList className="h-5 w-5 mr-2" />
-                            <span>Meal Type: {recipe.meal_type}</span>
+                            <span>Meal Type: {recipe.meal_types?.map(x => x.name)}</span>
                         </div>
                     </div>
                     <div className="bg-white rounded-lg shadow-md p-6">

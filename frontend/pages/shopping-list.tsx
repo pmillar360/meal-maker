@@ -3,8 +3,8 @@ import {
     getShoppingList,
     addShoppingListItem,
     updateShoppingListItem,
-    deleteShoppingListItem,
-} from "../services/api";
+    deleteShoppingListItem
+} from '../services/ShoppingListService';
 import { FaPlus, FaTrash, FaCheck } from "react-icons/fa";
 
 interface ShoppingListItem {
