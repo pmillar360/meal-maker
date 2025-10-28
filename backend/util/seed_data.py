@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from ..app import models
-from ..app.database import engine, SessionLocal
-from spoonacular import search_ingredients, search_recipes
+from app import models
+from app.database import engine, SessionLocal
+from util.spoonacular import search_ingredients, search_recipes
 
 def seed_diets(db: Session):
     """Seed dietary preferences"""
@@ -158,7 +158,7 @@ def map_recipes(recipe):
 
     new_recipe.id = recipe.id
     new_recipe.title = recipe.title
-    # new_recipe.image = recipe.image // TODO image is not implemented yet?
+    # new_recipe.image = recipe.image
 
     return new_recipe
 

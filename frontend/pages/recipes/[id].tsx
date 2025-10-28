@@ -1,24 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getRecipeById, addShoppingListItem } from '../../services/api';
+import { addShoppingListItem } from '../../services/ShoppingListService';
+import { RecipeIngredient } from '../../services/TypeService';
+import { Recipe } from '../../services/TypeService';
 import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaUtensils, FaList, FaCheck } from 'react-icons/fa';
-
-interface Ingredient {
-    id: number;
-    name: string;
-}
-
-interface Recipe {
-    id: number;
-    title: string;
-    cooking_time: number;
-    servings: number;
-    meal_type: string;
-    diets?: { id: number; name: string }[];
-    ingredients?: Ingredient[];
-    instructions?: string[];
-}
+import { getRecipeById } from '../../services/recipeService';
 
 export default function RecipeDetail() {
     const router = useRouter();
@@ -48,12 +35,12 @@ export default function RecipeDetail() {
         fetchRecipe();
     }, [id]);
 
-    const handleAddToShoppingList = async (ingredient: Ingredient) => {
-        if (addedItems.includes(ingredient.id)) return;
+    const handleAddToShoppingList = async (ingredient: RecipeIngredient) => {
+        if (addedItems.includes(ingredient.ingredient.id)) return;
         setAddingToList(true);
         try {
-            await addShoppingListItem({ name: ingredient.name, quantity: "1" });
-            setAddedItems(prev => [...prev, ingredient.id]);
+            await addShoppingListItem({ name: ingredient.ingredient.name, quantity: ingredient.quantity + " " + ingredient.unit });
+            setAddedItems(prev => [...prev, ingredient.ingredient.id]);
         } catch (error) {
             console.error("Error adding to shopping list:", error);
         } finally {
@@ -83,6 +70,13 @@ export default function RecipeDetail() {
                     </Link>
                     <h1 className="text-3xl font-bold ml-4">{recipe.title}</h1>
                 </div>
+                <div>
+                    <img src={recipe.image_url} className='w-full h-56 object-cover rounded-lg sm:grid-cols-2'/>
+                </div>
+                <div className='bg-white rounded-lg shadow-md gap-4 p-6 mb-8'>
+                    <h2 className='text-xl font-semibold mb-4'>Description</h2>
+                    <p dangerouslySetInnerHTML={{__html: recipe.description}}></p>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold mb-4">Details</h2>
@@ -96,7 +90,7 @@ export default function RecipeDetail() {
                         </div>
                         <div className="flex items-center text-gray-700">
                             <FaList className="h-5 w-5 mr-2" />
-                            <span>Meal Type: {recipe.meal_type}</span>
+                            <span>Meal Type: {recipe.meal_types?.map(x => x.name)}</span>
                         </div>
                     </div>
                     <div className="bg-white rounded-lg shadow-md p-6">
@@ -114,19 +108,20 @@ export default function RecipeDetail() {
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                     <h2 className="text-xl font-semibold mb-4">Ingredients</h2>
-                    {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                    {recipe.recipe_ingredients && recipe.recipe_ingredients.length > 0 ? (
                         <ul className="list-disc list-inside">
-                            {recipe.ingredients.map(ingredient => (
-                                <li key={ingredient.id} className="flex justify-between items-center py-2">
-                                    <span className="text-gray-700">{ingredient.name}</span>
+                            {recipe.recipe_ingredients.map(ingredient => (
+                                <li key={ingredient.ingredient.id} className="flex justify-between items-center py-2">
+                                    <span className="text-gray-700">{ingredient.ingredient.name}</span>
+                                    <span>{ingredient.quantity} {ingredient.unit}</span>
                                     <button
                                         onClick={() => handleAddToShoppingList(ingredient)}
-                                        className={`ml-4 px-3 py-1 rounded-lg text-white focus:outline-none ${addedItems.includes(ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
+                                        className={`ml-4 px-3 py-1 rounded-lg text-white focus:outline-none ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
                                             }`}
                                         disabled={addingToList}
                                     >
-                                        {addedItems.includes(ingredient.id) ? <FaCheck className="inline-block mr-1" /> : null}
-                                        {addingToList && addedItems.includes(ingredient.id) ? 'Adding...' : 'Add to Shopping List'}
+                                        {addedItems.includes(ingredient.ingredient.id) ? <FaCheck className="inline-block mr-1" /> : null}
+                                        {addingToList && addedItems.includes(ingredient.ingredient.id) ? 'Adding...' : 'Add to Shopping List'}
                                     </button>
                                 </li>
                             ))}
@@ -138,7 +133,7 @@ export default function RecipeDetail() {
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold mb-4">Instructions</h2>
                     <div className="prose max-w-none">
-                {recipe.instructions && recipe.instructions.length > 0 ? (
+                {Array.isArray(recipe.instructions) && recipe.instructions.length > 0 ? (
                     <ol className="list-decimal list-inside">
                         {recipe.instructions.map((step, idx) => (
                             <li key={idx} className="mb-2">{step}</li>

@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getRecipes } from '../services/api';
-
-interface Recipe {
-  id: number;
-  title: string;
-  cooking_time: number;
-  servings: number;
-  meal_type: string;
-  diets?: { id: number; name: string }[];
-}
+import { Recipe } from '../services/TypeService';
+import { getFeaturedRecipes } from '../services/recipeService';
 
 export default function Home() {
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
@@ -18,7 +10,7 @@ export default function Home() {
   useEffect(() => {
     const loadFeaturedRecipes = async () => {
       try {
-        const recipes = await getRecipes({ limit: 3 } as any);
+        const recipes = await getFeaturedRecipes(9);
         setFeaturedRecipes(recipes);
       } catch (error) {
         console.error("Failed to load featured recipes:", error);
@@ -87,11 +79,17 @@ export default function Home() {
                 href={`/recipes/${recipe.id}`}
                 className="card hover:shadow-lg transition-shadow duration-200">
 
-                <div className="h-40 bg-gray-200"></div>
+                <div className="h-40 bg-gray-200">
+                  <img
+                    src={recipe.image_url}
+                    alt={recipe.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-1">{recipe.title}</h3>
                   <p className="text-sm text-gray-500">
-                    {recipe.cooking_time} mins | {recipe.meal_type}
+                    {recipe.cooking_time} mins | {recipe.meal_types?.map(x => x.name)}
                   </p>
                 </div>
 

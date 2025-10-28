@@ -54,7 +54,14 @@ npm install
 npm run dev
 ```
 
+### Database Seeding
+
+```bash
+cd backend
+
+python -m util.seed_data
+```
+
 ## Project Structure
 - `/frontend` - Next.js application
 - `/backend` - FastAPI application
-- `/database` - Database schema and initial data

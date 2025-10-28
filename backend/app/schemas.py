@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 
 # Base schemas
 class DietBase(BaseModel):
@@ -11,14 +12,19 @@ class Diet(DietBase):
     class Config:
         from_attributes = True
 
-class IngredientQuantity(BaseModel):
-    amount: float  # or int, but float is more flexible
-    unit: str      # e.g., "g", "ml", "cup", "tbsp", etc.
+class MealTypeBase(BaseModel):
+    name: str
 
+class MealType(MealTypeBase):
+    id: int
+
+    class Config:
+        from_attributes = True
 
 class IngredientBase(BaseModel):
     name: str
     category: Optional[str] = None
+    spoonacular_id: Optional[int] = None
 
 class Ingredient(IngredientBase):
     id: int
@@ -26,18 +32,23 @@ class Ingredient(IngredientBase):
     class Config:
         from_attributes = True
 
-# Example usage in a recipe ingredient association:
-class RecipeIngredient(BaseModel):
-    ingredient: Ingredient
+class RecipeIngredientBase(BaseModel):
     quantity: Optional[str] = None
+    unit: Optional[str] = None
+
+class RecipeIngredient(RecipeIngredientBase):
+    ingredient: Ingredient
+
+    class Config:
+        from_attributes = True
 
 class RecipeBase(BaseModel):
     title: str
-    meal_type: Optional[str] = None
-    cooking_time: Optional[int] = None
-    servings: Optional[int] = None
-    description: Optional[str] = None
+    meal_types: Optional[List[MealType]] = None
+    diets: Optional[List[Diet]] = []
     image_url: Optional[str] = None
+    is_featured: Optional[bool] = None
+    last_updated: Optional[datetime] = None
 
 class Recipe(RecipeBase):
     id: int
@@ -48,8 +59,10 @@ class Recipe(RecipeBase):
 class RecipeDetail(RecipeBase):
     id: int
     instructions: Optional[str] = None
-    ingredients: List[Ingredient] = []
-    diets: List[Diet] = []
+    recipe_ingredients: List[RecipeIngredient] = []
+    cooking_time: Optional[int] = None
+    servings: Optional[int] = None
+    description: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -70,3 +83,11 @@ class ShoppingListItem(ShoppingListItemBase):
 class ShoppingListItemUpdate(BaseModel):
     quantity: Optional[str] = None
     completed: Optional[bool] = None
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
