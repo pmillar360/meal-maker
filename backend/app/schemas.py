@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+# Schemas are for frontend <-> backend communication
 
-# Base schemas
 class DietBase(BaseModel):
     name: str
 
@@ -24,7 +24,6 @@ class MealType(MealTypeBase):
 class IngredientBase(BaseModel):
     name: str
     category: Optional[str] = None
-    spoonacular_id: Optional[int] = None
 
 class Ingredient(IngredientBase):
     id: int
@@ -67,8 +66,10 @@ class RecipeDetail(RecipeBase):
     class Config:
         from_attributes = True
 
-class ShoppingListItemBase(IngredientBase):
+class ShoppingListItemBase(BaseModel):
+    name: str
     quantity: Optional[str] = None
+    category: Optional[str] = None
 
 class ShoppingListItemCreate(ShoppingListItemBase):
     pass
@@ -91,3 +92,32 @@ class UserCreate(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+class FridgeItemBase(BaseModel):
+    name: str
+    quantity: Optional[str] = None
+
+class FridgeItemCreate(FridgeItemBase):
+    pass
+
+class FridgeItem(FridgeItemBase):
+    id: int
+    
+    class Config:
+        from_attributes = True
+
+class FridgeItemUpdate(BaseModel):
+    quantity: Optional[str] = None
+
+class UserBase(BaseModel):
+    username: str
+
+class User(UserBase):
+    id: int
+    # recipes: List[Recipe] = []
+    favourite_recipes: List[Recipe] = []
+    shopping_list_items: List[ShoppingListItem] = []
+    fridge_items: List[FridgeItem] = []
+        
+    class Config:
+        from_attributes = True

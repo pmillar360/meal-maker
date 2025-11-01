@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Ingredient, getAllIngredients } from '../../services/api'
+import { Ingredient } from '../../services/TypeService';
+import { getAllIngredients } from '../../services/ingredientService';
+import { addFridgeIngredient } from '../../services/fridgeService';
+import { addShoppingListItem } from '../../services/ShoppingListService';
 
 export default function Ingredients() {
     const [loading, setLoading] = useState(true);
@@ -11,7 +14,6 @@ export default function Ingredients() {
             try {
                 const ingredientsData = await getAllIngredients();
 
-                console.log(ingredientsData);
                 setIngredients(ingredientsData)
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -22,6 +24,24 @@ export default function Ingredients() {
 
         fetchData();
     }, []);
+
+    const handleAddToFridge = async (e: React.MouseEvent<HTMLButtonElement>, ingredient: Ingredient) => {
+        const fridgeItem = {
+            name: ingredient.name,
+            quantity: "", // Default quantity, can be updated later
+        };
+
+        await addFridgeIngredient(fridgeItem);
+    }
+
+    const handleAddToShoppingList = async (e: React.MouseEvent<HTMLButtonElement>, ingredient: Ingredient) => {
+        const shoppingListItem = {
+            name: ingredient.name,
+            quantity: "", // Default quantity, can be updated later
+        };
+
+        await addShoppingListItem(shoppingListItem);
+    }
 
     return (
         <div className="space-y-6">
@@ -41,8 +61,8 @@ export default function Ingredients() {
                                 <div className='text-lg font-semibold'>
                                     <h3>{ingredient.name}</h3>
                                 </div>
-                                <p className='font-semibold text-lg'>+F</p> {/* TODO Implement the "Add to fridge" and "Add to shopping list" functions */}
-                                <p className='font-semibold text-lg'>+S</p>
+                                <button className='font-semibold text-lg' onClick={(e) => handleAddToFridge(e, ingredient)}>+F</button> {/* TODO These buttons should turn green or something to indicate success */}
+                                <button className='font-semibold text-lg' onClick={(e) => handleAddToShoppingList(e, ingredient)}>+S</button>
                             </div>
                         </div>
                     ))

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React, { ReactNode, useEffect, useState } from 'react';
-import { loginUser, registerUser, logoutUser, getCurrentUser } from '../services/UserService'
+import React, { ReactNode } from 'react';
 import UserManagement from './UserManagement';
 
 interface LayoutProps {
@@ -52,7 +51,7 @@ export default function Layout({ children }: LayoutProps) {
                 </Link>
                 <Link
                   href="/shopping-list"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${router.pathname === '/shopping-list'
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-nowrap ${router.pathname === '/shopping-list'
                     ? 'border-primary text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                     }`}
@@ -68,9 +67,9 @@ export default function Layout({ children }: LayoutProps) {
                   }`}>
                     Fridge
                 </Link>
-                <UserManagement />
               </nav>
             </div>
+            <UserManagement />
           </div>
         </div>
       </header>

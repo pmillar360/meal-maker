@@ -2,12 +2,15 @@ import bcrypt
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError, constants
 import os
+from fastapi.security import OAuth2PasswordBearer
 
 SECRET_KEY = os.getenv("SECRET_KEY") or "your-default-secret-key-here-123"
 ALGORITHM = constants.ALGORITHMS.HS256
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 # Maybe something shorter like 10/15 minutes?
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    
 def create_access_token(data:dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

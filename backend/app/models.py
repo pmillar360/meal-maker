@@ -3,6 +3,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, Table
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from .database import Base
+# Models are for DB <-> Backend communication
 # https://docs.sqlalchemy.org/en/20/changelog/whatsnew_20.html#migrating-an-existing-mapping
 
 # Association table for recipes and ingredients
@@ -15,6 +16,14 @@ class RecipeIngredient(Base):
 
     recipe = relationship("Recipe", back_populates="recipe_ingredients")
     ingredient = relationship("Ingredient", back_populates="ingredient_recipes")
+
+class FavouriteRecipe(Base):
+    __tablename__ = "favourite_recipes"
+    user_id = mapped_column(ForeignKey("users.id"), primary_key=True)
+    recipe_id = mapped_column(ForeignKey("recipes.id"), primary_key=True)
+
+    user = relationship("User", back_populates="favourite_recipes")
+    recipe = relationship("Recipe", back_populates="favourited_by")
 
 # Association table for recipes and dietary restrictions
 recipe_diet = Table(
@@ -42,7 +51,9 @@ class User(Base):
     
     # Relationships
     recipes = relationship("Recipe", back_populates="user")
-    # TODO favourites = relationship?
+    favourite_recipes = relationship("FavouriteRecipe", back_populates="user")
+    shopping_list_items = relationship("ShoppingListItem", back_populates="user", cascade="all, delete-orphan")
+    fridge_items = relationship("FridgeItem", back_populates="user", cascade="all, delete-orphan")
 
 class Recipe(Base):
     __tablename__ = "recipes"
@@ -55,7 +66,7 @@ class Recipe(Base):
     instructions = mapped_column(Text)
     user_id = mapped_column(Integer, ForeignKey("users.id"))
     image_url = mapped_column(String)
-    last_updated: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.now(), onupdate=datetime.datetime.now())
+    last_updated: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Spoonacular
@@ -66,6 +77,7 @@ class Recipe(Base):
     recipe_ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
     meal_types = relationship("MealType", secondary=recipe_meal_type, back_populates="recipes")
     diets = relationship("Diet", secondary=recipe_diet, back_populates="recipes")
+    favourited_by = relationship("FavouriteRecipe", back_populates="recipe")
 
 class Ingredient(Base):
     __tablename__ = "ingredients"
@@ -89,13 +101,17 @@ class Diet(Base):
     recipes = relationship("Recipe", secondary=recipe_diet, back_populates="diets")
 
 class ShoppingListItem(Base):
-    __tablename__ = "shopping_list"
+    __tablename__ = "shopping_list_items"
 
     id = mapped_column(Integer, primary_key=True, index=True)
+    user_id = mapped_column(Integer, ForeignKey("users.id"))
     name = mapped_column(String, index=True)
-    quantity = mapped_column(String, nullable=True)
+    quantity = mapped_column(String)
     completed = mapped_column(Boolean, default=False)
-    category = mapped_column(String)
+    category = mapped_column(String, index=True)
+    # TODO Attach an ingredient object to this? Probably not needed. Maybe just id?
+    
+    user = relationship("User", back_populates="shopping_list_items")
 
 class MealType(Base):
     __tablename__ = "meal_types"
@@ -104,3 +120,13 @@ class MealType(Base):
     name = mapped_column(String, index=True, unique=True)
 
     recipes = relationship("Recipe", secondary=recipe_meal_type, back_populates="meal_types")
+
+class FridgeItem(Base):
+    __tablename__ = "fridge_items"
+    id = mapped_column(Integer, primary_key=True, index=True)
+    user_id = mapped_column(Integer, ForeignKey("users.id"))
+    name = mapped_column(String)
+    quantity = mapped_column(String)
+    # expiry date?
+
+    user = relationship("User", back_populates="fridge_items")

@@ -33,12 +33,6 @@ export const getRecipes = async (
     return response.data;
   };
 
-  // TODO Maybe all "getAll" methods should implement a limit or pagination features
-  export const getAllIngredients = async (): Promise<Ingredient[]> => {
-    const response = await api.get<Ingredient[]>("/ingredients/");
-    return response.data;
-  };
-
   export const getAllMealTypes = async (): Promise<MealType[]> => {
     const response = await api.get<MealType[]>("/meal-types/");
     return response.data;

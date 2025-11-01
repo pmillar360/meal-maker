@@ -1,6 +1,6 @@
 from fastapi import status
 
-from backend.util.auth import verify_token
+from util.auth import verify_token
 
 def test_register_user(client):
     item_data = {

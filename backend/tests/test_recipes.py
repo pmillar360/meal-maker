@@ -1,6 +1,6 @@
 from fastapi import status
 
-def test_get_recipe(client, test_recipe):
+def test_get_recipe_by_id(client, test_recipe):
     response = client.get(f"/recipes/{test_recipe.id}")
     
     assert response.status_code == status.HTTP_200_OK

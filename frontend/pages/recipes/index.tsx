@@ -4,7 +4,8 @@ import { FaFilter, FaTimes } from 'react-icons/fa';
 import { Diet, Ingredient, MealType } from '../../services/TypeService';
 import { Recipe } from '../../services/TypeService';
 import MultiSelectAutoComplete, { Option } from '../../components/MultiSelectAutoComplete';
-import { getRecipes, getAllIngredients, getAllMealTypes, getAllDiets } from '../../services/recipeService';
+import { getRecipes, getAllMealTypes, getAllDiets } from '../../services/recipeService';
+import { getAllIngredients } from '../../services/ingredientService';
 
 export default function Recipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -159,7 +160,6 @@ export default function Recipes() {
       </div>
 
       {/* Filter chips */}
-      {/* TODO Show meal type and diet before ingredient filters */}
       <div className="flex flex-wrap gap-2 mb-2"> 
         {showFilters && filters.mealType && (
           <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center">

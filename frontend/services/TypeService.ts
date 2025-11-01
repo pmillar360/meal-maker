@@ -1,5 +1,3 @@
-// Types
-
 export interface Recipe {
   id: number;
   title: string;
@@ -20,7 +18,6 @@ export interface Ingredient {
   id: number;
   name: string;
   category?: string;
-  spoonacular_id?: number;
 }
 
 export interface RecipeIngredient {
@@ -34,6 +31,7 @@ export interface ShoppingListItem {
   name: string;
   quantity: string;
   completed?: boolean;
+  category?: string;
 }
 
 export interface User {
@@ -50,4 +48,11 @@ export interface MealType {
 export interface Diet {
   id: number;
   name: string;
+}
+
+export interface FridgeItem {
+  id: number;
+  name: string;
+  quantity: string;
+  category?: string;
 }

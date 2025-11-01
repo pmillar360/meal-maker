@@ -71,7 +71,7 @@ export default function RecipeDetail() {
                     <h1 className="text-3xl font-bold ml-4">{recipe.title}</h1>
                 </div>
                 <div>
-                    <img src={recipe.image_url} className='w-full h-56 object-cover rounded-lg sm:grid-cols-2'/>
+                    <img alt={recipe.title} src={recipe.image_url} className='w-full h-56 object-cover rounded-lg sm:grid-cols-2'/>
                 </div>
                 <div className='bg-white rounded-lg shadow-md gap-4 p-6 mb-8'>
                     <h2 className='text-xl font-semibold mb-4'>Description</h2>

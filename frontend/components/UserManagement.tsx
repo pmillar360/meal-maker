@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCurrentUser, loginUser, logoutUser, refreshAccessToken, registerUser } from "../services/UserService";
+import { getCurrentUser, loginUser, logoutUser, registerUser } from "../services/UserService";
 
 export default function UserManagement() {
     const [username, setUsername] = useState("");

@@ -61,6 +61,15 @@ cd backend
 
 python -m util.seed_data
 ```
+### Database Migration
+
+```bash
+cd backend
+
+alembic revision -m "Changes made"
+
+alembic upgrade head
+```
 
 ## Project Structure
 - `/frontend` - Next.js application

@@ -6,19 +6,15 @@ import {
     deleteShoppingListItem
 } from '../services/ShoppingListService';
 import { FaPlus, FaTrash, FaCheck } from "react-icons/fa";
-
-interface ShoppingListItem {
-    id: number;
-    name: string;
-    quantity: string;
-    completed?: boolean;
-}
+import { ShoppingListItem } from "../services/TypeService";
+import { addFridgeIngredient } from "../services/fridgeService";
 
 export default function ShoppingList() {
     const [items, setItems] = useState<ShoppingListItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [newItem, setNewItem] = useState({ name: "", quantity: "" });
     const [error, setError] = useState<string | null>(null);
+    const [addToFridge, setAddToFridge] = useState(true);
 
     useEffect(() => {
         fetchShoppingList();
@@ -60,6 +56,11 @@ export default function ShoppingList() {
             setItems((prev) =>
                 prev.map((i) => (i.id === updatedItem.id ? updatedItem : i))
             );
+
+            if (item.completed === false && addToFridge) {
+                // If marking as completed and addToFridge is true, add to fridge
+                await addFridgeIngredient({ name: item.name, quantity: item.quantity || "" });// Ignoring result
+            }
         } catch (err) {
             console.error("Error updating item:", err);
             setError("Failed to update item");
@@ -132,7 +133,14 @@ export default function ShoppingList() {
 
             {/* Shopping list */}
             <div className="card p-4">
-                <h2 className="text-lg font-semibold mb-4">Shopping List Items</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold">Shopping List Items</h2>
+
+                    <div>
+                        <input type="checkbox" name="addCompletedCheckbox" checked={addToFridge} onChange={(e) => setAddToFridge(e.target.checked)} />
+                        <label className="ml-2">Add completed items to Fridge</label>
+                    </div>
+                </div>
 
                 {loading ? (
                     <p className="text-center py-4">Loading shopping list...</p>
@@ -144,7 +152,6 @@ export default function ShoppingList() {
                 ) : (
                     <div>
                         <div className="mb-4">
-                            <h3 className="text-md font-medium">Items to buy</h3>
                             <ul className="divide-y">
                                 {items
                                     .filter((item) => !item.completed)

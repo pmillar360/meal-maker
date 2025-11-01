@@ -58,7 +58,12 @@ export const getCurrentUser = async (): Promise<User> => {
   if (!accessToken) {
     // Refresh the access token with the refresh token
     // NOTE This will run for not logged in users too? Will this cause issues? Needs testing
-    await refreshAccessToken();
+    const response = await refreshAccessToken();
+
+    if (!response) {
+      throw new Error("Could not refresh token")
+      // TODO Return user.id = 0 user for logged in stuff? It will just save to local storage
+    }
   }
   
   try {

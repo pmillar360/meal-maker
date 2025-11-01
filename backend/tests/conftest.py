@@ -1,9 +1,10 @@
 import os
-from backend.util.auth import hash_password
+from util.auth import hash_password
 
 os.environ["DATABASE_URL"] = "sqlite:///../test_db2.db" # This line stops the generation of the mealmaker db file in the project root, if this is set to a file it will be created
 
 import pytest
+from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
-from app.models import MealType, User, Recipe, Ingredient, ShoppingListItem, Diet
+from app.models import FridgeItem, MealType, User, Recipe, Ingredient, ShoppingListItem, Diet
 
 # Create test database URL
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -60,6 +61,21 @@ def client(db_session):
         yield test_client
     app.dependency_overrides.clear()
 
+@pytest.fixture(scope="function")
+def authenticated_client(client, test_user):
+    
+    # Authenticate the client
+    response = client.post("/token", json={"username": test_user.username, "password": "hashedpassword123"})
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+    access_token = data.get("access_token")
+
+    client.headers.update({"Authorization": f"Bearer {access_token}"})
+    
+    yield client
+    
 @pytest.fixture(scope="function")
 def test_user(db_session):
     user = User(
@@ -131,12 +147,24 @@ def test_recipe_with_ingredient(db_session, test_recipe, test_ingredient):
     return test_recipe
 
 @pytest.fixture(scope="function")
-def test_shopping_list_item(db_session):
+def test_shopping_list_item(db_session, test_user):
     item = ShoppingListItem(
         name="Onion",
         quantity="2 units",
         completed=False,
         id=4,
+        user_id=test_user.id,
+    )
+    db_session.add(item)
+    db_session.commit()
+    db_session.refresh(item)
+    return item
+
+@pytest.fixture(scope="function")
+def test_fridge_item(db_session, test_user):
+    item = FridgeItem(
+        name="TestIngredient",
+        user_id=test_user.id
     )
     db_session.add(item)
     db_session.commit()
