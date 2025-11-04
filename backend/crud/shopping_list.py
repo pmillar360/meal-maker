@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-
 from app import models, schemas
 
 def add_shopping_list_item(db: Session, user_id: int, item: schemas.ShoppingListItemCreate):

@@ -1,5 +1,6 @@
 import os
 import requests
+from util.logger import log
 
 SPOONACULAR_API_KEY = os.getenv("SPOONACULAR_API_KEY")
 BASE_URL = "https://api.spoonacular.com"
@@ -20,6 +21,7 @@ def search_recipes(query=None, ingredients=None, number=10):
     if ingredients:
         params["includeIngredients"] = ",".join(ingredients)
 
+    log(f"Searching Spoonacular recipes with query: {query} and ingredients: {ingredients}", level=20)
     response = requests.get(RECIPE_URL, params=params)
     response.raise_for_status()
     return response.json()
@@ -34,6 +36,7 @@ def get_external_recipe_by_id(id: int):
         "addTasteData": False,
     }
 
+    log(f"Fetching Spoonacular recipe by ID: {id}", level=20)
     response = requests.get(RECIPE_URL, params=params)
     response.raise_for_status()
 
@@ -50,6 +53,7 @@ def search_ingredients(query=None, number=10):
     if query:
         params["query"] = query
 
+    log(f"Searching Spoonacular ingredients with query: {query}", level=20)
     response = requests.get(INGREDIENT_URL, params=params)
     response.raise_for_status()
     return response.json()
@@ -64,7 +68,26 @@ def get_random_recipes(number=3):
         "number": number,
     }
 
-    respone = requests.get(REQ_URL, params=params)
-    respone.raise_for_status()
-    
-    return respone.json()
+    log(f"Fetching {number} random Spoonacular recipes", level=20)
+    response = requests.get(REQ_URL, params=params)
+    response.raise_for_status()
+
+    return response.json()
+
+# Calling this endpoint requires 1 point and 0.01 points per recipe returned
+def get_recipes_by_ingredients(ingredients, number=10):
+    REQ_URL = BASE_URL + "/recipes/findByIngredients"
+
+    params = {
+        "apiKey": SPOONACULAR_API_KEY,
+        "ingredients": ",".join(ingredients),
+        "number": number,
+        "ranking": 1,  # 1 = maximize used ingredients, 2 = minimize missing ingredients
+        "ignorePantry": True, # ignore common pantry items like water, salt, flour TODO test the difference and maybe make it an option
+    }
+
+    log(f"Fetching Spoonacular recipes by ingredients: {ingredients}", level=20)
+    response = requests.get(REQ_URL, params=params)
+    response.raise_for_status()
+
+    return response.json()

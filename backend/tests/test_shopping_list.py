@@ -15,7 +15,6 @@ def test_create_shopping_list_item(authenticated_client):
     assert "completed" in data
     assert data["completed"] == False
 
-# TODO How to test things that require user to be authenticated?
 def test_get_shopping_list(authenticated_client, test_shopping_list_item):
     response = authenticated_client.get("/shopping-list/")
     

@@ -70,6 +70,12 @@ def get_featured_recipes(
     """Get a number of featured recipes"""
     return recipes.get_featured_recipes(db, number=number)
 
+@app.get("/recipes/suggestions/", response_model=List[schemas.Recipe])
+def get_recipe_suggestions(ingredients: str = Query(...), db: Session = Depends(get_db)):
+    """Get recipe suggestions based on user preferences"""
+    ingredient_names = ingredients.split(",") if ingredients else []
+    return recipes.get_recipe_suggestions_by_ingredients(db, ingredient_names, fetchExternal=True)
+
 @app.get("/ingredients/", response_model=List[schemas.Ingredient])
 def get_all_ingredients(db: Session = Depends(get_db)):
     """Get all available ingredients"""
@@ -176,3 +182,21 @@ def delete_fridge_item(item_id: int, db: Session = Depends(get_db), user: schema
     if not result:
         raise HTTPException(status_code=404, detail="Item not found")
     return True
+
+@app.post("/users/favorites/", response_model=schemas.Recipe)
+def add_user_favorite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
+    """Add a recipe to user's favorite recipes"""
+    return recipes.add_user_favorite_recipe(db, user.id, recipe_id)
+
+@app.delete("/users/favorites/{recipe_id}", response_model=bool)
+def remove_user_favorite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
+    """Remove a recipe from user's favorite recipes"""
+    result = recipes.remove_user_favorite_recipe(db, user.id, recipe_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Recipe not found in favorites")
+    return True
+
+@app.get("/users/favorites/", response_model=List[schemas.Recipe])
+def get_user_favorite_recipes(db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
+    """Get a user's favorite recipes"""
+    return recipes.get_user_favorite_recipes(db, user.id)

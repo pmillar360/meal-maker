@@ -3,7 +3,6 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app import models
 
-
 def get_ingredient(db: Session, ingredient_id: int, ingredient_name: Optional[str] = None):
     """Get a single ingredient by id or name"""
     query = db.query(models.Ingredient)
@@ -49,8 +48,6 @@ def create_local_ingredients_from_spoonacular_recipe(db: Session, data: dict):
     db.refresh(ingredient)
 
     return ingredient
-
-
 
 def get_all_ingredients(db: Session):
     """Get all ingredients"""

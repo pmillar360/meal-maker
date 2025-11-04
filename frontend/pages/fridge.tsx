@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { FridgeItem } from "../services/TypeService";
+import { FridgeItem, Recipe } from "../services/TypeService";
 import { addFridgeIngredient, deleteFridgeIngredient, getFridgeIngredients, updateFridgeIngredient } from "../services/fridgeService";
 import { FaPlus, FaTrash } from "react-icons/fa";
+import { getRecipesByIngredients } from "../services/recipeService";
 
-// BUG Quanitity is not set on created ingredients but shows after reload
 export default function Fridge() {
     const [ingredients, setIngredients] = useState<FridgeItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [newItem, setNewItem] = useState({ name: "", quantity: "" });
+    const [recipeSuggestions, setRecipeSuggestions] = useState<Recipe[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -61,6 +62,11 @@ export default function Fridge() {
             // setError("Failed to add item");
         }
     };
+
+    const getRecipesForFridge = async () => {
+        const recipes = await getRecipesByIngredients(ingredients.map(item => item.name));
+        setRecipeSuggestions(recipes);
+    }
 
     return (
         <div className="space-y-6">
@@ -146,6 +152,32 @@ export default function Fridge() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            <div className="card p-4">
+                <div>
+                    <h2 className="text-lg font-semibold mb-4">Recipe Suggestions</h2>
+                    <button
+                        onClick={getRecipesForFridge}
+                        className="btn btn-primary"
+                    >
+                        Get Recipe Suggestions
+                    </button>
+                </div>
+                <div className="mt-4">
+                    {recipeSuggestions.length === 0 ? (
+                        <p className="text-gray-500">No recipe suggestions yet. Click the button above to get suggestions based on your fridge ingredients.</p>
+                    ) : (
+                        <ul className="divide-y">
+                            {recipeSuggestions.map((recipe) => (
+                                <li key={recipe.id} className="py-3 px-1">
+                                    <p className="font-medium">{recipe.title}</p>
+                                    <p className="text-sm text-gray-500">{recipe.description}</p>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             </div>
         </div>
     );

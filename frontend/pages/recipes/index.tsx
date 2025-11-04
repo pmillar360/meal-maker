@@ -209,9 +209,9 @@ export default function Recipes() {
                   <div className="absolute inset-0 bg-black opacity-30"></div>
                   <div className="absolute bottom-0 left-0 p-4">
                     <h3 className="text-white text-lg font-semibold">{recipe.title}</h3>
-                    <p className="text-white text-sm">
+                    {/* <p className="text-white text-sm">
                       {recipe.servings} servings • {recipe.cooking_time} min
-                    </p>
+                    </p> */}
                   </div>
                 </div>
               </Link>

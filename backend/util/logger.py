@@ -8,8 +8,7 @@ def intialize_logger():
     )
     
 def get_logger():
-
-    return logging.getLogger(__name__);
+    return logging.getLogger(__name__)
 
 def log(msg: str, level: int = logging.INFO):
     logger = get_logger()

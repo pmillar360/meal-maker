@@ -4,7 +4,7 @@ from app import models, schemas
 
 def add_fridge_item(db: Session, user_id: int, item: schemas.FridgeItemCreate):
     """Add item to the User's fridge"""
-    db_item = models.FridgeItem(**item.model_dump()) # NOTE Verify this works
+    db_item = models.FridgeItem(**item.model_dump())
     db_item.user_id = user_id
     db.add(db_item)
     db.commit()

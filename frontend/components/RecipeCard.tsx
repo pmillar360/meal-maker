@@ -1,20 +1,12 @@
 import Link from 'next/link';
 import { FiClock, FiUsers } from 'react-icons/fi';
-
-// Renamed to .tsx and added TypeScript types for props
-interface Recipe {
-  id: number;
-  title: string;
-  cooking_time: number;
-  servings: number;
-  meal_type: string;
-  diets?: { id: number; name: string }[];
-}
+import { Recipe } from '../services/TypeService';
 
 interface RecipeCardProps {
   recipe: Recipe;
 }
 
+// TODO Compare this to other card components for consistency
 export default function RecipeCard({ recipe }: RecipeCardProps) {
   return (
     <div className="card hover:shadow-lg transition-shadow duration-300">
@@ -29,7 +21,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         </div>
         <div className="mt-3">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
-            {recipe.meal_type}
+            {recipe.meal_types && recipe.meal_types[0]?.name}
           </span>
           {recipe.diets && recipe.diets.map(diet => (
             <span 

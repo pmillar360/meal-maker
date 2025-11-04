@@ -4,8 +4,6 @@ import axios from "axios";
 
 let accessToken: string | null = null;
 
-export let isUserLoggedIn = false;
-
 interface TokenResponse {
   access_token: string;
   token_type: string;
@@ -13,12 +11,10 @@ interface TokenResponse {
 
 const setToken = (tokens: TokenResponse) => {
   accessToken = tokens.access_token;
-  isUserLoggedIn = true;
 };
 
 const clearToken = () => {
   accessToken = null;
-  isUserLoggedIn = false;
 };
 
 export const getAccessToken = () => accessToken;
@@ -67,7 +63,6 @@ export const getCurrentUser = async (): Promise<User> => {
   }
   
   try {
-    // TODO Need to attach the access_token to the request here?
     const response = await api.get<User>(`/me`);
     return response.data;
   } catch (error) {

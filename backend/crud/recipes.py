@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from crud.ingredients import create_local_ingredients_from_spoonacular_recipe
-from util.spoonacular import get_external_recipe_by_id, get_random_recipes
+from util.spoonacular import get_external_recipe_by_id, get_random_recipes, get_recipes_by_ingredients as get_recipes_by_ingredients_external
 
 def get_recipe_by_id(db: Session, recipe_id: int):
     recipe = db.query(models.Recipe).filter(
@@ -82,7 +82,6 @@ def get_featured_recipes(db: Session, number: int):
         return featured_recipes # The recipes for the day are cached
     
     try:
-        # TODO log fetching recipes from spoonacular
         random_recipes_result = get_random_recipes(number) # Make API request for random recipes
 
         if not random_recipes_result["recipes"]:
@@ -118,6 +117,30 @@ def get_featured_recipes(db: Session, number: int):
             .limit(number)
             .all()
         )
+
+# TODO Check for duplicates when searching external recipes?
+def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[str], number: int = 10, fetchExternal: bool = False):
+    """Get recipes that can be made with the given ingredients"""
+    recipes = []
+
+    recipes = get_recipes(db, ingredients=ingredient_names, limit=number)
+
+    # This is expensive on the API, so only do it if requested
+    if len(recipes) < number and fetchExternal:
+        # Fetch recipes from external API
+        count = number - len(recipes)
+        external_recipes = get_recipes_by_ingredients_external(ingredient_names, count)
+
+        # Cache external recipes locally
+        for ext_recipe in external_recipes:
+            try:
+                local_recipe = create_local_recipe_from_spoonacular(db, get_external_recipe_by_id(ext_recipe["id"])) # Need to fetch full recipe details
+                recipes.append(local_recipe)
+            except Exception as e:
+                print(f"Error caching recipe: {e}")
+                continue
+    
+    return recipes
 
 def create_local_recipe_from_spoonacular(db: Session, data: dict, is_featured_new: bool = False):
     """Given an external object, convert to local db model"""
@@ -205,6 +228,46 @@ def create_local_recipe_from_spoonacular(db: Session, data: dict, is_featured_ne
     db.refresh(recipe)
 
     return recipe
+
+# TODO Not sure if this is the best way to implement this?
+def get_user_favorite_recipes(db: Session, user_id: int):
+    """Get a user's favorite recipes"""
+    recipes = db.query(models.FavouriteRecipe).filter(models.FavouriteRecipe.user_id == user_id).all()
+    if not recipes:
+        raise HTTPException(status_code=404, detail="User not found")
+    return recipes
+
+def add_user_favorite_recipe(db: Session, user_id: int, recipe_id: int):
+    """Add a recipe to a user's favorites"""
+    favorite = db.query(models.FavouriteRecipe).filter(
+        models.FavouriteRecipe.user_id == user_id,
+        models.FavouriteRecipe.recipe_id == recipe_id
+    ).first()
+    
+    if favorite:
+        return favorite  # Already a favorite
+
+    favorite = models.FavouriteRecipe(
+        user_id=user_id,
+        recipe_id=recipe_id
+    )
+    db.add(favorite)
+    db.commit()
+    db.refresh(favorite)
+    return favorite
+
+def remove_user_favorite_recipe(db: Session, user_id: int, recipe_id: int):
+    """Remove a recipe from a user's favorites"""
+    favorite = db.query(models.FavouriteRecipe).filter(
+        models.FavouriteRecipe.user_id == user_id,
+        models.FavouriteRecipe.recipe_id == recipe_id
+    ).first()
+    
+    if favorite:
+        db.delete(favorite)
+        db.commit()
+        return True
+    return False
 
 # NOTE These will be here for now...
 def get_all_diets(db: Session):

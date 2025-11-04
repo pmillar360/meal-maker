@@ -1,7 +1,7 @@
 import os
 from util.auth import hash_password
 
-os.environ["DATABASE_URL"] = "sqlite:///../test_db2.db" # This line stops the generation of the mealmaker db file in the project root, if this is set to a file it will be created
+os.environ["DATABASE_URL"] = "sqlite:///./backend/tests/test_db.db"
 
 import pytest
 from fastapi import status
