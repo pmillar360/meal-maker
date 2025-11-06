@@ -11,11 +11,11 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white shadow">
+      <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
+              <div className="shrink-0 flex items-center">
                 <Link href="/" className="text-primary-dark font-bold text-xl">
                   Meal Maker
                 </Link>
@@ -73,7 +73,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 grow">
         {children}
       </main>
       <footer className="bg-white border-t border-gray-200 py-6">

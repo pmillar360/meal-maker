@@ -67,10 +67,10 @@ export default function Alert({
 
   return (
     <div className={`${bgColor} ${textColor} p-4 rounded-md flex items-start`}>
-      <div className={`${iconColor} flex-shrink-0 mr-3`}>
+      <div className={`${iconColor} shrink-0 mr-3`}>
         <Icon />
       </div>
-      <div className="flex-grow">
+      <div className="grow">
         {message}
       </div>
       {dismissible && (

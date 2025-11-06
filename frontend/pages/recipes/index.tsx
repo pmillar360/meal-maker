@@ -162,18 +162,18 @@ export default function Recipes() {
       {/* Filter chips */}
       <div className="flex flex-wrap gap-2 mb-2"> 
         {showFilters && filters.mealType && (
-          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center">
+          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm flex items-center">
             {filters.mealType}
           </span>)} 
         {showFilters && filters.diet && (
-          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center">
+          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm flex items-center">
             {filters.diet}
           </span>
         )}
         {showFilters && filters.ingredients.map((opt) => (
           <span
             key={opt.id}
-            className="bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center"
+            className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm flex items-center"
           >
             {opt.name}
             <button

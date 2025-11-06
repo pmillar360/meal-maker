@@ -116,7 +116,7 @@ export default function RecipeDetail() {
                                     <span>{ingredient.quantity} {ingredient.unit}</span>
                                     <button
                                         onClick={() => handleAddToShoppingList(ingredient)}
-                                        className={`ml-4 px-3 py-1 rounded-lg text-white focus:outline-none ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
+                                        className={`ml-4 px-3 py-1 rounded-lg text-white focus:outline-hidden ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
                                             }`}
                                         disabled={addingToList}
                                     >

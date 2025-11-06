@@ -109,7 +109,7 @@ export default function ShoppingList() {
                         placeholder="Item name"
                         value={newItem.name}
                         onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                        className="form-input flex-grow"
+                        className="form-input grow"
                         required
                     />
                     <input
@@ -160,9 +160,9 @@ export default function ShoppingList() {
                                             <button
                                                 title="buttonToggleComplete"
                                                 onClick={() => handleToggleComplete(item)}
-                                                className="w-6 h-6 rounded-full border-2 border-primary flex-shrink-0 mr-3"
+                                                className="w-6 h-6 rounded-full border-2 border-primary shrink-0 mr-3"
                                             />
-                                            <div className="flex-grow">
+                                            <div className="grow">
                                                 <p className="font-medium">{item.name}</p>
                                                 <div className="flex items-center">
                                                     <input
@@ -172,7 +172,7 @@ export default function ShoppingList() {
                                                             handleUpdateQuantity(item.id, e.target.value)
                                                         }
                                                         placeholder="Add quantity"
-                                                        className="text-sm text-gray-500 border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none w-24"
+                                                        className="text-sm text-gray-500 border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-hidden w-24"
                                                     />
                                                 </div>
                                             </div>
@@ -203,11 +203,11 @@ export default function ShoppingList() {
                                                 <button
                                                     title="buttonToggleComplete"
                                                     onClick={() => handleToggleComplete(item)}
-                                                    className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mr-3"
+                                                    className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center shrink-0 mr-3"
                                                 >
                                                     <FaCheck size={12} />
                                                 </button>
-                                                <div className="flex-grow">
+                                                <div className="grow">
                                                     <p className="line-through">{item.name}</p>
                                                     {item.quantity && (
                                                         <p className="text-sm line-through">

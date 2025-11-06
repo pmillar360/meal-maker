@@ -24,7 +24,7 @@ export default function Home() {
   return (
     <div className="space-y-10">
       {/* Hero Section */}
-      <section className="rounded-xl bg-gradient-to-r from-primary-light to-primary p-8 text-white">
+      <section className="rounded-xl bg-linear-to-r from-primary-light to-primary p-8 text-white">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <h1 className="text-4xl font-bold">Welcome to Meal Maker</h1>
           <p className="text-xl">Find recipes based on ingredients you already have</p>

@@ -84,7 +84,7 @@ export default function Fridge() {
                         placeholder="Item name"
                         value={newItem.name}
                         onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                        className="form-input flex-grow"
+                        className="form-input grow"
                         required
                     />
                     <input
@@ -125,7 +125,7 @@ export default function Fridge() {
                                 {ingredients
                                     .map((item) => (
                                         <li key={item.id} className="py-3 px-1 flex items-center">
-                                            <div className="flex-grow">
+                                            <div className="grow">
                                                 <p className="font-medium">{item.name}</p>
                                                 <div className="flex items-center">
                                                     <input
@@ -135,7 +135,7 @@ export default function Fridge() {
                                                             handleUpdateQuantity(item.id, e.target.value)
                                                         }
                                                         placeholder="Add quantity"
-                                                        className="text-sm text-gray-500 border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-none w-24"
+                                                        className="text-sm text-gray-500 border-b border-transparent hover:border-gray-300 focus:border-primary focus:outline-hidden w-24"
                                                     />
                                                 </div>
                                             </div>
