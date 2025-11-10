@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { FaFilter, FaTimes } from 'react-icons/fa';
-import { Diet, Ingredient, MealType } from '../../services/TypeService';
-import { Recipe } from '../../services/TypeService';
-import MultiSelectAutoComplete, { Option } from '../../components/MultiSelectAutoComplete';
-import { getRecipes, getAllMealTypes, getAllDiets } from '../../services/recipeService';
-import { getAllIngredients } from '../../services/ingredientService';
+import { useState, useEffect, MouseEvent } from "react";
+import Link from "next/link";
+import { FaFilter, FaHeart, FaTimes } from "react-icons/fa";
+import { Diet, Ingredient, MealType } from "../../services/TypeService";
+import { Recipe } from "../../services/TypeService";
+import MultiSelectAutoComplete, {
+  Option,
+} from "../../components/MultiSelectAutoComplete";
+import {
+  getRecipes,
+  getAllMealTypes,
+  getAllDiets,
+  addUserFavouriteRecipe,
+} from "../../services/recipeService";
+import { getAllIngredients } from "../../services/ingredientService";
+import { FiClock, FiUsers } from "react-icons/fi";
 
 export default function Recipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -15,76 +23,106 @@ export default function Recipes() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     ingredients: [],
-    mealType: '',
-    diet: '',
+    mealTypes: [],
+    diet: "",
   });
   const [showFilters, setShowFilters] = useState(true);
 
   type Filters = {
     ingredients: Ingredient[];
-    mealType: string;
+    mealTypes: MealType[];
     diet: string;
   };
 
-  // TODO This is reloading all data every filter change I believe, could be optimized
   // Need to ensure the ingredients, mealtypes, diets are loaded first, then recipes and filter changes
   useEffect(() => {
-    const fetchData = async () => {
+    // Initial data fetch without filters
+    const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [recipesData, ingredientsData, mealTypesData, dietsData] = await Promise.all([
-          getRecipes(filters),
+        const [ingredientsData, mealTypesData, dietsData] = await Promise.all([
           getAllIngredients(),
           getAllMealTypes(),
           getAllDiets(),
         ]);
 
-        setRecipes(recipesData);
         setIngredients(ingredientsData);
         setMealTypes(mealTypesData);
         setDiets(dietsData);
+      } catch (error) {
+        console.error("Error fetching initial data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    const fetchRecipesData = async () => {
+      setLoading(true);
+      try {
+        const [recipesData] = await Promise.all([getRecipes(filters)]);
+
+        setRecipes(recipesData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchRecipesData();
   }, [filters]);
-
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleIngredientFilterChange = (e: Option[]) => {
-    const mappedIngredients = e.map(ingredient => ({
+    const mappedIngredients = e.map((ingredient) => ({
       id: ingredient.id,
       name: ingredient.label,
-    }))
+    }));
 
     setFilters((prev) => ({ ...prev, ingredients: mappedIngredients }));
-  }
+  };
 
   const clearFilters = () => {
     setFilters({
       ingredients: [],
-      mealType: '',
-      diet: ''
+      mealTypes: [],
+      diet: "",
     });
   };
 
-  const allIngredients: Option[] = ingredients.map(ingredient => ({
+  const allIngredients: Option[] = ingredients.map((ingredient) => ({
     id: ingredient.id,
     label: ingredient.name,
   }));
 
   const removeOption = (selectedOptionId: number) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      ingredients: prev.ingredients.filter(ingredient => ingredient.id !== selectedOptionId)
+      ingredients: prev.ingredients.filter(
+        (ingredient) => ingredient.id !== selectedOptionId
+      ),
     }));
+  };
+
+  const handleFavouriteClick = async (
+    e: MouseEvent<HTMLButtonElement>,
+    recipe: Recipe
+  ) => {
+    e.preventDefault();
+    const result = await addUserFavouriteRecipe(recipe.id);
+    if (result) {
+      setRecipes((prevRecipes) =>
+        prevRecipes.map((r) =>
+          r.id === recipe.id ? { ...r, isFavourite: true } : r
+        )
+      );
+    }
   };
 
   return (
@@ -94,10 +132,12 @@ export default function Recipes() {
         <div className="flex flex-wrap gap-2">
           {/* Ingredient filter */}
           <div className="flex items-center">
-            <label htmlFor="ingredients" className="mr-2 text-sm font-medium">Ingredients:</label>
+            <label htmlFor="ingredients" className="mr-2 text-sm font-medium">
+              Ingredients:
+            </label>
             <MultiSelectAutoComplete
               options={allIngredients}
-              selectedOptions={filters.ingredients.map(ingredient => ({
+              selectedOptions={filters.ingredients.map((ingredient) => ({
                 id: ingredient.id,
                 label: ingredient.name,
               }))}
@@ -107,24 +147,32 @@ export default function Recipes() {
 
           {/* Meal type filter */}
           <div className="flex items-center text-nowrap">
-            <label htmlFor="mealType" className="mr-2 text-sm font-medium">Meal Type:</label>
-            <select
-              id="mealType"
-              name="mealType"
-              value={filters.mealType}
-              onChange={handleFilterChange}
-              className="p-2 border rounded-md text-sm form-input"
-            >
-              <option value="">All Meal Types</option>
-              {mealTypes.map(type => (
-                <option key={type.id} value={type.name}>{type.name.charAt(0).toUpperCase() + type.name.slice(1)}</option>
-              ))}
-            </select>
+            <label htmlFor="mealType" className="mr-2 text-sm font-medium">
+              Meal Type:
+            </label>
+            <MultiSelectAutoComplete
+              options={mealTypes.map((type) => ({
+                id: type.id,
+                label: type.name,
+              }))}
+              selectedOptions={filters.mealTypes.map((type) => ({
+                id: type.id,
+                label: type.name,
+              }))}
+              onChange={(selected) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  mealTypes: selected.map(opt => ({ id: opt.id, name: opt.label }))
+                }))
+              }
+            />
           </div>
 
           {/* Diet type filter */}
           <div className="flex items-center text-nowrap">
-            <label htmlFor="diet" className="mr-2 text-sm font-medium">Diet Type:</label>
+            <label htmlFor="diet" className="mr-2 text-sm font-medium">
+              Diet Type:
+            </label>
             <select
               id="diet"
               name="diet"
@@ -133,8 +181,10 @@ export default function Recipes() {
               className="p-2 border rounded-md text-sm form-input"
             >
               <option value="">All Diets</option>
-              {diets.map(diet => (
-                <option key={diet.id} value={diet.name}>{diet.name.charAt(0).toUpperCase() + diet.name.slice(1)}</option>
+              {diets.map((diet) => (
+                <option key={diet.id} value={diet.name}>
+                  {diet.name.charAt(0).toUpperCase() + diet.name.slice(1)}
+                </option>
               ))}
             </select>
           </div>
@@ -147,7 +197,7 @@ export default function Recipes() {
             className="flex items-center px-4 py-2 mr-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-md hover:bg-blue-700"
           >
             <FaFilter className="mr-2" />
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
+            {showFilters ? "Hide Filters" : "Show Filters"}
           </button>
           <button
             onClick={clearFilters}
@@ -160,30 +210,36 @@ export default function Recipes() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex flex-wrap gap-2 mb-2"> 
-        {showFilters && filters.mealType && (
-          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm flex items-center">
-            {filters.mealType}
-          </span>)} 
-        {showFilters && filters.diet && (
-          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm flex items-center">
-            {filters.diet}
-          </span>
-        )}
-        {showFilters && filters.ingredients.map((opt) => (
+      <div className="flex flex-wrap gap-2 mb-2">
+        {showFilters && filters.mealTypes.map((opt) => (
           <span
-            key={opt.id}
-            className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm flex items-center"
-          >
+            key={opt.id} className="bg-green-100 text-green-700 px-2 py-1 rounded-sm flex items-center">
             {opt.name}
-            <button
-              onClick={() => removeOption(opt.id)}
-              className="ml-1 text-red-500 hover:text-red-700"
+            <button className="ml-1 text-red-500 hover:text-red-700"
+              onClick={() => setFilters((prev) => ({
+                ...prev,
+                mealTypes: prev.mealTypes.filter((mt) => mt.id !== opt.id),
+              }))}
             >
               ✕
             </button>
           </span>
         ))}
+        {showFilters &&
+          filters.ingredients.map((opt) => (
+            <span
+              key={opt.id}
+              className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm flex items-center"
+            >
+              {opt.name}
+              <button
+                onClick={() => removeOption(opt.id)}
+                className="ml-1 text-red-500 hover:text-red-700"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
       </div>
 
       {/* Recipe list */}
@@ -197,24 +253,87 @@ export default function Recipes() {
             <p className="text-lg text-gray-500">No recipes found.</p>
           </div>
         ) : (
-          recipes.map(recipe => (
-            <div key={recipe.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <Link href={`/recipes/${recipe.id}`}>
-                <div className="relative">
-                  <img
-                    src={recipe.image_url}
-                    alt={recipe.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black opacity-30"></div>
-                  <div className="absolute bottom-0 left-0 p-4">
-                    <h3 className="text-white text-lg font-semibold">{recipe.title}</h3>
-                    {/* <p className="text-white text-sm">
-                      {recipe.servings} servings • {recipe.cooking_time} min
-                    </p> */}
+          recipes.map((recipe) => (
+            <div>
+              <div className="card hover:shadow-lg transition-shadow duration-300">
+                <div>
+                  <Link href={`/recipes/${recipe.id}`}>
+                    <img
+                      src={recipe.image_url}
+                      alt={recipe.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  </Link>
+
+                  <div className="flex justify-between p-4 py-2">
+                    <Link href={`/recipes/${recipe.id}`}>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {recipe.title}
+                      </h3>
+                    </Link>
+
+                    <button
+                      className="bg-white bg-opacity-75 rounded-full hover:bg-opacity-100"
+                      onClick={(e) => handleFavouriteClick(e, recipe)}
+                    >
+                      {/* TODO This heart adds to favourites but needs to give visual feedback to user (turn to checkmark on successful add) Also needs to maybe start grey then be red for favourites since that makes more sense */}
+                      <FaHeart
+                        title="Add Recipe to Favourites"
+                        className={`text-red-500 ${recipe.isFavourite ? "fill-current" : ""
+                          }`}
+                      />
+                    </button>
+                  </div>
+
+                  {(recipe.servings || recipe.cooking_time) && (
+                    <div className="flex items-center text-sm text-gray-500 mb-2 ps-4">
+                      {recipe.cooking_time && (
+                        <div>
+                          <FiClock className="mr-1" />
+                          <span>{recipe.cooking_time} minutes</span>
+                        </div>
+                      )}
+                      {recipe.cooking_time && recipe.servings && (
+                        <span className="mx-2">•</span>
+                      )}
+                      {recipe.servings && (
+                        <div>
+                          <FiUsers className="mr-1" />
+                          <span>{recipe.servings} servings</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="px-3 py-2">
+                    {recipe.meal_types &&
+                      recipe.meal_types.map((meal_type) => (
+                        <span
+                          key={meal_type.id}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2"
+                        >
+                          {meal_type.name}
+                        </span>
+                      ))}
+                    {recipe.diets &&
+                      recipe.diets.map((diet) => (
+                        <span
+                          key={diet.id}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2"
+                        >
+                          {diet.name}
+                        </span>
+                      ))}
+                  </div>
+                  <div className="p-2">
+                    <Link
+                      href={`/recipes/${recipe.id}`}
+                      className="text-primary hover:text-primary-dark font-medium p-2"
+                    >
+                      View Recipe
+                    </Link>
                   </div>
                 </div>
-              </Link>
+              </div>
             </div>
           ))
         )}

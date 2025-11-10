@@ -3,6 +3,8 @@ import { Ingredient } from '../../services/TypeService';
 import { getAllIngredients } from '../../services/ingredientService';
 import { addFridgeIngredient } from '../../services/fridgeService';
 import { addShoppingListItem } from '../../services/ShoppingListService';
+import { TbFridge } from "react-icons/tb";
+import { FiShoppingCart } from "react-icons/fi";
 
 export default function Ingredients() {
     const [loading, setLoading] = useState(true);
@@ -25,7 +27,7 @@ export default function Ingredients() {
         fetchData();
     }, []);
 
-    const handleAddToFridge = async (e: React.MouseEvent<HTMLButtonElement>, ingredient: Ingredient) => {
+    const handleAddToFridge = async (ingredient: Ingredient) => {
         const fridgeItem = {
             name: ingredient.name,
             quantity: "", // Default quantity, can be updated later
@@ -34,7 +36,7 @@ export default function Ingredients() {
         await addFridgeIngredient(fridgeItem);
     }
 
-    const handleAddToShoppingList = async (e: React.MouseEvent<HTMLButtonElement>, ingredient: Ingredient) => {
+    const handleAddToShoppingList = async (ingredient: Ingredient) => {
         const shoppingListItem = {
             name: ingredient.name,
             quantity: "", // Default quantity, can be updated later
@@ -45,29 +47,36 @@ export default function Ingredients() {
 
     return (
         <div className="space-y-6">
-            <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5'>
-                {loading ? (
-                    <div className='col-span-full text-center py-10'>
-                        <p className='text-lg text-gray-500'>Loading ingredients...</p>
-                    </div>
-                ) : ingredients.length === 0 ? (
-                    <div className='col-span-full text-center py-10'>
-                        <p className='text-lg text-gray-500'>No ingredients found.</p>
-                    </div>            
-                ) : (
-                    ingredients.map(ingredient => (
-                        <div key={ingredient.id} className='bg-white rounded-lg shadow-md overflow-hidden'>
-                            <div className='flex justify-between items-center p-4'>
-                                <div className='text-lg font-semibold'>
-                                    <h3>{ingredient.name}</h3>
-                                </div>
-                                <button className='font-semibold text-lg' onClick={(e) => handleAddToFridge(e, ingredient)}>+F</button> {/* TODO These buttons should turn green or something to indicate success */}
-                                <button className='font-semibold text-lg' onClick={(e) => handleAddToShoppingList(e, ingredient)}>+S</button>
-                            </div>
+            <h1 className='text-3xl font-bold'>All Ingredients</h1>
+            {loading ? (
+                <p>Loading...</p>
+            ) : (
+                <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+                    {loading ? (
+                        <div className='col-span-full text-center py-10'>
+                            <p className='text-lg text-gray-500'>Loading ingredients...</p>
                         </div>
-                    ))
-                )}
-            </div>
+                    ) : ingredients.length === 0 ? (
+                        <div className='col-span-full text-center py-10'>
+                            <p className='text-lg text-gray-500'>No ingredients found.</p>
+                        </div>
+                    ) : (
+                        ingredients.map(ingredient => (
+                            <div key={ingredient.id} className='bg-white rounded-lg shadow-md overflow-hidden'>
+                                <div className='flex justify-between p-4'>
+                                    <div className='text-lg font-semibold'>
+                                        <h3>{ingredient.name}</h3>
+                                    </div>
+                                    <div>
+                                        <button title='Add ingredient to Fridge' className='font-semibold text-lg border-2 border-transparent hover:border-green-500' onClick={() => handleAddToFridge(ingredient)}><TbFridge /></button> {/* TODO These buttons should turn green or something to indicate success */}
+                                        <button title='Add ingredient to Shopping List' className='font-semibold text-lg border-2 border-transparent hover:border-green-500' onClick={() => handleAddToShoppingList(ingredient)}><FiShoppingCart /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
         </div>
     )
 }

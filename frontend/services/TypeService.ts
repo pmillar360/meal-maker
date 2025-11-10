@@ -12,6 +12,7 @@ export interface Recipe {
   description: string;
   is_featured: boolean;
   last_updated: Date;
+  isFavourite?: boolean; // TODO Need to figure out how to handle this properly
 }
 
 export interface Ingredient {

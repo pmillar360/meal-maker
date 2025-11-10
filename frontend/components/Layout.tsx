@@ -67,6 +67,15 @@ export default function Layout({ children }: LayoutProps) {
                   }`}>
                     Fridge
                 </Link>
+                <Link
+                  href="/favourites"
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                    router.pathname === '/favourites'
+                      ? 'border-primary text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}>
+                    Favourites
+                </Link>
               </nav>
             </div>
             <UserManagement />

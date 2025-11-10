@@ -130,6 +130,7 @@ export default function RecipeDetail() {
                         <p className="text-gray-500">No ingredients found for this recipe.</p>
                     )}
                 </div>
+                {/* TODO Add a button to load instructions? Maybe one day it can come as part of RecipeDetail */}
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold mb-4">Instructions</h2>
                     <div className="prose max-w-none">

@@ -45,7 +45,7 @@ def read_root():
 @app.get("/recipes/", response_model=List[schemas.Recipe])
 def get_recipes(
     ingredients: Optional[str] = Query(None, description="Comma separated list of ingredients"),
-    meal_type: Optional[str] = Query(None, description="Meal type (breakfast, lunch, dinner, snack)"),
+    meal_types: Optional[str] = Query(None, description="Comma separated list of meal types (breakfast, lunch, dinner, snack)"),
     diet: Optional[str] = Query(None, description="Dietary restriction (vegetarian, vegan, etc)"),
     skip: int = 0,
     limit: int = 100,
@@ -53,7 +53,8 @@ def get_recipes(
 ):
     """Get recipes with optional filtering by ingredients, meal type, and dietary restrictions"""
     ingredient_list = ingredients.split(",") if ingredients else []
-    return recipes.get_recipes(db, ingredient_list, meal_type, diet, skip, limit)
+    meal_type_list = meal_types.split(",") if meal_types else []
+    return recipes.get_recipes(db, ingredient_list, meal_type_list, diet, skip, limit)
 
 @app.get("/recipes/{recipe_id}", response_model=schemas.RecipeDetail)
 def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
@@ -61,20 +62,21 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
 
     return recipes.get_recipe_by_id(db, recipe_id)
 
-# TODO Need to put a hard limit to prevent people from manually requesting large amounts
 @app.get("/recipes/featured/", response_model=List[schemas.RecipeDetail])
 def get_featured_recipes(
     number: int = 3, # NOTE Not 100% sure if exposing this is needed but it's fine for now
     db: Session = Depends(get_db),
 ):
     """Get a number of featured recipes"""
-    return recipes.get_featured_recipes(db, number=number)
+    if number < 1 or number > 20:
+        raise HTTPException(status_code=400, detail="Number of featured recipes must be between 1 and 20")
+    return recipes.get_featured_recipes(db, number)
 
 @app.get("/recipes/suggestions/", response_model=List[schemas.Recipe])
-def get_recipe_suggestions(ingredients: str = Query(...), db: Session = Depends(get_db)):
+def get_recipe_suggestions(ingredients: str = Query(...), count: int = 5, db: Session = Depends(get_db)):
     """Get recipe suggestions based on user preferences"""
     ingredient_names = ingredients.split(",") if ingredients else []
-    return recipes.get_recipe_suggestions_by_ingredients(db, ingredient_names, fetchExternal=True)
+    return recipes.get_recipe_suggestions_by_ingredients(db, ingredient_names, count, fetchExternal=True)
 
 @app.get("/ingredients/", response_model=List[schemas.Ingredient])
 def get_all_ingredients(db: Session = Depends(get_db)):
@@ -146,7 +148,7 @@ def refresh_token(request: Request):
     if not refresh_token:
         # TODO What to do if there is no refresh token? Return nothing? Raise error
         # If 401 is raised here it will get called again because of the interceptor? Shouldn't worry about that
-        return None
+        return {"access_token": None, "token_type": "bearer"}
 
     return users.refresh_token(refresh_token)
 
@@ -183,20 +185,20 @@ def delete_fridge_item(item_id: int, db: Session = Depends(get_db), user: schema
         raise HTTPException(status_code=404, detail="Item not found")
     return True
 
-@app.post("/users/favorites/", response_model=schemas.Recipe)
-def add_user_favorite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
-    """Add a recipe to user's favorite recipes"""
-    return recipes.add_user_favorite_recipe(db, user.id, recipe_id)
+@app.post("/users/favourites/", response_model=schemas.FavouriteRecipe)
+def add_user_favourite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
+    """Add a recipe to user's favourite recipes"""
+    return recipes.add_user_favourite_recipe(db, user.id, recipe_id)
 
-@app.delete("/users/favorites/{recipe_id}", response_model=bool)
-def remove_user_favorite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
-    """Remove a recipe from user's favorite recipes"""
-    result = recipes.remove_user_favorite_recipe(db, user.id, recipe_id)
+@app.delete("/users/favourites/{recipe_id}", response_model=bool)
+def remove_user_favourite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
+    """Remove a recipe from user's favourite recipes"""
+    result = recipes.remove_user_favourite_recipe(db, user.id, recipe_id)
     if not result:
-        raise HTTPException(status_code=404, detail="Recipe not found in favorites")
+        raise HTTPException(status_code=404, detail="Recipe not found in favourites")
     return True
 
-@app.get("/users/favorites/", response_model=List[schemas.Recipe])
-def get_user_favorite_recipes(db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
-    """Get a user's favorite recipes"""
-    return recipes.get_user_favorite_recipes(db, user.id)
+@app.get("/users/favourites/", response_model=List[schemas.Recipe])
+def get_user_favourite_recipes(db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
+    """Get a user's favourite recipes"""
+    return recipes.get_user_favourite_recipes(db, user.id)

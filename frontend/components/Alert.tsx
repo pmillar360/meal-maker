@@ -1,4 +1,3 @@
-// Renamed to .tsx and added TypeScript types for props
 import { ReactNode, useEffect, useState } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaTimes } from 'react-icons/fa';
 

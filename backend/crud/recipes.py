@@ -36,7 +36,7 @@ def get_recipe_by_id(db: Session, recipe_id: int):
 def get_recipes(
     db: Session, 
     ingredients: List[str] = [], 
-    meal_type: Optional[str] = None, 
+    meal_types: Optional[List[str]] = None, 
     diet: Optional[str] = None,
     skip: int = 0, 
     limit: int = 100
@@ -45,10 +45,13 @@ def get_recipes(
     query = db.query(models.Recipe)
     
     # Apply meal type filter
-    if meal_type:
-        meal_type_obj = db.query(models.MealType).filter(models.MealType.name == meal_type).first()
-        if meal_type_obj:
-            query = query.filter(models.Recipe.diets.contains(meal_type_obj))
+    if meal_types:
+        for meal_type_name in meal_types:
+            meal_type = db.query(models.MealType).filter(
+                models.MealType.name.ilike(f"%{meal_type_name.strip()}%")
+            ).first()
+            if meal_type:
+                query = query.filter(models.Recipe.meal_types.contains(meal_type)) # TODO How to OR filter instead of AND?
     
     # Apply dietary filter
     if diet:
@@ -229,42 +232,42 @@ def create_local_recipe_from_spoonacular(db: Session, data: dict, is_featured_ne
 
     return recipe
 
-# TODO Not sure if this is the best way to implement this?
-def get_user_favorite_recipes(db: Session, user_id: int):
-    """Get a user's favorite recipes"""
-    recipes = db.query(models.FavouriteRecipe).filter(models.FavouriteRecipe.user_id == user_id).all()
-    if not recipes:
-        raise HTTPException(status_code=404, detail="User not found")
-    return recipes
+def get_user_favourite_recipes(db: Session, user_id: int):
+    """Get a user's favourite recipes"""
+    favourite_recipes = db.query(models.Recipe).join(models.FavouriteRecipe).filter(
+            models.FavouriteRecipe.user_id == user_id
+        ).all()
 
-def add_user_favorite_recipe(db: Session, user_id: int, recipe_id: int):
-    """Add a recipe to a user's favorites"""
-    favorite = db.query(models.FavouriteRecipe).filter(
+    return favourite_recipes
+
+def add_user_favourite_recipe(db: Session, user_id: int, recipe_id: int):
+    """Add a recipe to a user's favourites"""
+    favourite = db.query(models.FavouriteRecipe).filter(
         models.FavouriteRecipe.user_id == user_id,
         models.FavouriteRecipe.recipe_id == recipe_id
     ).first()
-    
-    if favorite:
-        return favorite  # Already a favorite
 
-    favorite = models.FavouriteRecipe(
+    if favourite:
+        return favourite  # Already a favourite
+
+    favourite = models.FavouriteRecipe(
         user_id=user_id,
         recipe_id=recipe_id
     )
-    db.add(favorite)
+    db.add(favourite)
     db.commit()
-    db.refresh(favorite)
-    return favorite
+    db.refresh(favourite)
+    return favourite
 
-def remove_user_favorite_recipe(db: Session, user_id: int, recipe_id: int):
-    """Remove a recipe from a user's favorites"""
-    favorite = db.query(models.FavouriteRecipe).filter(
+def remove_user_favourite_recipe(db: Session, user_id: int, recipe_id: int):
+    """Remove a recipe from a user's favourites"""
+    favourite = db.query(models.FavouriteRecipe).filter(
         models.FavouriteRecipe.user_id == user_id,
         models.FavouriteRecipe.recipe_id == recipe_id
     ).first()
     
-    if favorite:
-        db.delete(favorite)
+    if favourite:
+        db.delete(favourite)
         db.commit()
         return True
     return False

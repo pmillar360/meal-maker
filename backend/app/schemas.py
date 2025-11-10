@@ -43,7 +43,7 @@ class RecipeIngredient(RecipeIngredientBase):
 
 class RecipeBase(BaseModel):
     title: str
-    meal_types: Optional[List[MealType]] = None
+    meal_types: Optional[List[MealType]] = []
     diets: Optional[List[Diet]] = []
     image_url: Optional[str] = None
     is_featured: Optional[bool] = None
@@ -119,5 +119,12 @@ class User(UserBase):
     shopping_list_items: List[ShoppingListItem] = []
     fridge_items: List[FridgeItem] = []
         
+    class Config:
+        from_attributes = True
+
+class FavouriteRecipe(BaseModel):
+    user_id: int
+    recipe_id: int
+
     class Config:
         from_attributes = True

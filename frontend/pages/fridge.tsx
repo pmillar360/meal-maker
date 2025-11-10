@@ -64,6 +64,11 @@ export default function Fridge() {
     };
 
     const getRecipesForFridge = async () => {
+        if (ingredients.length < 5) {
+            // Not enough ingredients to suggest recipes
+            setRecipeSuggestions([]);
+            return;
+        }
         const recipes = await getRecipesByIngredients(ingredients.map(item => item.name));
         setRecipeSuggestions(recipes);
     }
@@ -105,7 +110,6 @@ export default function Fridge() {
                     </button>
                 </form>
             </div>
-
 
             <div className="card p-4">
                 <h2 className="text-lg font-semibold mb-4">Fridge Ingredients</h2>
