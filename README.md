@@ -54,12 +54,12 @@ npm install
 npm run dev
 ```
 
-### Database Seeding
-
+### Or Docker
 ```bash
-cd backend
+# Create and deploy the project
+docker compose up --build
+```
 
-python -m util.seed_data
 ```
 ### Database Migration
 
