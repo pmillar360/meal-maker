@@ -1,4 +1,5 @@
 alembic==1.17.1
+annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.9.0
 bcrypt==5.0.0
@@ -8,7 +9,7 @@ click==8.1.8
 colorama==0.4.6
 coverage==7.8.0
 ecdsa==0.19.1
-fastapi==0.116.1
+fastapi==0.127.0
 greenlet==3.1.1
 h11==0.14.0
 httpcore==1.0.8
