@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./
+        working-directory: backend
 
     steps:
       - uses: actions/checkout@v4
@@ -21,4 +21,4 @@ jobs:
           cache: "pip"
 
       - run: pip install -r requirements.txt
-      - run: pytest --tb=short --verbose
+      - run: cd .. && pytest --tb=short --verbose
