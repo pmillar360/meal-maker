@@ -3,7 +3,7 @@ import { getAccessToken, refreshAccessToken } from './UserService';
 
 // Connect to localhost:8000 if NEXT_PUBLIC_API_URL is not provided
 const API_URL = process.env.NEXT_PUBLIC_API_URL 
-  ? `http://${process.env.NEXT_PUBLIC_API_URL}:8000`
+  ? `${process.env.NEXT_PUBLIC_API_URL}:8000`
   : 'http://localhost:8000';
 
 
