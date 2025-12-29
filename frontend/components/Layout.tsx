@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { ReactNode } from 'react';
 import UserManagement from './UserManagement';
+import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,6 +10,8 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
+  const { isLoggedIn } = useAuth();
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm">
@@ -49,33 +52,40 @@ export default function Layout({ children }: LayoutProps) {
                   >
                     Ingredients
                 </Link>
-                <Link
-                  href="/shopping-list"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-nowrap ${router.pathname === '/shopping-list'
-                    ? 'border-primary text-gray-900'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                >
-                  Shopping List
-                </Link>
-                <Link
-                  href="/fridge"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname === '/fridge'
-                      ? 'border-primary text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}>
-                    Fridge
-                </Link>
-                <Link
-                  href="/favourites"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname === '/favourites'
-                      ? 'border-primary text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}>
-                    Favourites
-                </Link>
+                {isLoggedIn && (
+                  <>
+                    <Link
+                      href="/shopping-list"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                        router.pathname === '/shopping-list'
+                          ? 'border-primary text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    >
+                      Shopping List
+                    </Link>
+                    <Link
+                      href="/fridge"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                        router.pathname === '/fridge'
+                          ? 'border-primary text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    >
+                      Fridge
+                    </Link>
+                    <Link
+                      href="/favourites"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                        router.pathname === '/favourites'
+                          ? 'border-primary text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    >
+                      Favourites
+                    </Link>
+                  </>
+                )}
               </nav>
             </div>
             <UserManagement />

@@ -1,28 +1,10 @@
-import { useEffect, useState } from "react";
-import { getCurrentUser, loginUser, logoutUser, registerUser } from "../services/UserService";
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 export default function UserManagement() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [loggedInUser, setLoggedInUser] = useState("");
-    
-    useEffect(() => {
-      const initAuth = async () => {
-        try {
-          const user = await getCurrentUser();
-
-          if (user) {
-            setLoggedInUser(user.username);
-            setIsLoggedIn(true);
-          }
-        } catch {
-            setIsLoggedIn(false);
-        }
-      };
-      initAuth();
-    }, []);
+    const { isLoggedIn, user, login, register, logout } = useAuth();
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -31,17 +13,7 @@ export default function UserManagement() {
         }
 
         try {
-            const loginResult = await loginUser(username, password);
-
-            if (loginResult != null) {
-                window.location.reload();
-                // TODO Instead of reloading the whole page/app, how to trigger update in other controls? Ex. Show favourite icons on recipes
-
-                // setLoggedInUser(username);
-                // setIsLoggedIn(true);
-                console.log("Login successful");
-            }
-
+            await login(username, password);
         } catch (error) {
             console.error("Error logging in user:", error);
         }
@@ -55,11 +27,7 @@ export default function UserManagement() {
         }
 
         try {
-            const result = await registerUser(username, password);
-
-            if (result) {
-                console.log("User ${}")
-            }
+            await register(username, password);
         } catch (error) {
             console.error("Error with registration: ", error);
         }
@@ -69,8 +37,7 @@ export default function UserManagement() {
         e.preventDefault();
 
         try {
-            await logoutUser();
-            window.location.reload();
+            await logout();
         } catch (error) {
             console.error("Error logging out:", error);
         }
@@ -90,7 +57,7 @@ export default function UserManagement() {
             )}
             {isLoggedIn && (
                 <div className='flex'>
-                    <p className='inline-flex  items-center border-primary text-gray-900 m-3'>{loggedInUser}</p>
+                    <p className='inline-flex  items-center border-primary text-gray-900 m-3'>{user?.username}</p>
                     <button className='btn btn-primary m-3 text-white hover:bg-opacity-90' onClick={handleLogout}>Log Out</button>
                 </div>)}
         </div>
