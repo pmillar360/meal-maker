@@ -15,7 +15,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6/10 mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="shrink-0 flex items-center">
@@ -24,7 +24,7 @@ export default function Layout({ children }: LayoutProps) {
                 </Link>
               </div>
               <nav className="ml-6 flex space-x-8">
-                <Link
+                {/* <Link
                   href="/"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 ${router.pathname === '/'
                     ? 'border-primary text-gray-900'
@@ -32,7 +32,7 @@ export default function Layout({ children }: LayoutProps) {
                     }`}
                 >
                   Home
-                </Link>
+                </Link> */}
                 <Link
                   href="/recipes"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 ${router.pathname.startsWith('/recipes')

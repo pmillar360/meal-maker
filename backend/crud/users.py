@@ -53,8 +53,8 @@ def get_current_user(
             raise credentials_exception
 
         return get_user(username, db)
-    except:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    except HTTPException as e:
+        raise e
 
 def get_current_active_user(
     current_user: User = Depends(get_current_user),
