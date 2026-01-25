@@ -60,7 +60,6 @@ npm run dev
 docker compose up --build
 ```
 
-```
 ### Database Migration
 
 ```bash
