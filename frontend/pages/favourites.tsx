@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Recipe } from "../services/TypeService";
 import { getUserFavouriteRecipes } from "../services/recipeService";
-import Link from "next/link";
+import RecipeCard from "../components/RecipeCard";
 
 export default function Favourites() {
     const [favourites, setFavourites] = useState<Recipe[]>([]);
@@ -18,11 +18,11 @@ export default function Favourites() {
 
     return (
         <div>
-            <h1>Your Favourites</h1>
+            <h1 className="text-3xl font-bold mb-4">Your Favourites</h1>
             <ul>
                 {favourites.map((recipe) => (
                     <li key={recipe.id}>
-                        <Link href={`/recipes/${recipe.id}`}>{recipe.title}</Link>
+                        <RecipeCard recipe={recipe} />
                     </li>
                 ))}
             </ul>

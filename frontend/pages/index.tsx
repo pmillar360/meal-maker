@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Recipe } from '../services/TypeService';
 import { getFeaturedRecipes } from '../services/recipeService';
+import RecipeCard from '../components/RecipeCard';
 
 export default function Home() {
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
@@ -74,26 +75,7 @@ export default function Home() {
             <p>Loading featured recipes...</p>
           ) : featuredRecipes.length > 0 ? (
             featuredRecipes.map(recipe => (
-              <Link
-                key={recipe.id}
-                href={`/recipes/${recipe.id}`}
-                className="card hover:shadow-lg transition-shadow duration-200">
-
-                <div className="h-40 bg-gray-200">
-                  <img
-                    src={recipe.image_url}
-                    alt={recipe.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-1">{recipe.title}</h3>
-                  <p className="text-sm text-gray-500">
-                    {recipe.cooking_time} mins | {recipe.meal_types?.map(x => x.name)}
-                  </p>
-                </div>
-
-              </Link>
+              <RecipeCard key={recipe.id} recipe={recipe} />
             ))
           ) : (
             <p className="text-gray-500">No featured recipes available</p>

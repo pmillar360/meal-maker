@@ -1,6 +1,5 @@
 import { useState, useEffect, MouseEvent } from "react";
-import Link from "next/link";
-import { FaFilter, FaHeart, FaTimes } from "react-icons/fa";
+import { FaFilter, FaTimes } from "react-icons/fa";
 import { Diet, Ingredient, MealType } from "../../services/TypeService";
 import { Recipe } from "../../services/TypeService";
 import MultiSelectAutoComplete, {
@@ -13,7 +12,7 @@ import {
   addUserFavouriteRecipe,
 } from "../../services/recipeService";
 import { getAllIngredients } from "../../services/ingredientService";
-import { FiClock, FiUsers } from "react-icons/fi";
+import RecipeCard from "../../components/RecipeCard";
 
 export default function Recipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -108,21 +107,6 @@ export default function Recipes() {
         (ingredient) => ingredient.id !== selectedOptionId
       ),
     }));
-  };
-
-  const handleFavouriteClick = async (
-    e: MouseEvent<HTMLButtonElement>,
-    recipe: Recipe
-  ) => {
-    e.preventDefault();
-    const result = await addUserFavouriteRecipe(recipe.id);
-    if (result) {
-      setRecipes((prevRecipes) =>
-        prevRecipes.map((r) =>
-          r.id === recipe.id ? { ...r, isFavourite: true } : r
-        )
-      );
-    }
   };
 
   return (
@@ -254,87 +238,7 @@ export default function Recipes() {
           </div>
         ) : (
           recipes.map((recipe) => (
-            <div>
-              <div className="card hover:shadow-lg transition-shadow duration-300">
-                <div>
-                  <Link href={`/recipes/${recipe.id}`}>
-                    <img
-                      src={recipe.image_url}
-                      alt={recipe.title}
-                      className="w-full h-48 object-cover"
-                    />
-                  </Link>
-
-                  <div className="flex justify-between p-4 py-2">
-                    <Link href={`/recipes/${recipe.id}`}>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {recipe.title}
-                      </h3>
-                    </Link>
-
-                    <button
-                      className="bg-white bg-opacity-75 rounded-full hover:bg-opacity-100"
-                      onClick={(e) => handleFavouriteClick(e, recipe)}
-                    >
-                      {/* TODO This heart adds to favourites but needs to give visual feedback to user (turn to checkmark on successful add) Also needs to maybe start grey then be red for favourites since that makes more sense */}
-                      <FaHeart
-                        title="Add Recipe to Favourites"
-                        className={`text-red-500 ${recipe.isFavourite ? "fill-current" : ""
-                          }`}
-                      />
-                    </button>
-                  </div>
-
-                  {(recipe.servings || recipe.cooking_time) && (
-                    <div className="flex items-center text-sm text-gray-500 mb-2 ps-4">
-                      {recipe.cooking_time && (
-                        <div>
-                          <FiClock className="mr-1" />
-                          <span>{recipe.cooking_time} minutes</span>
-                        </div>
-                      )}
-                      {recipe.cooking_time && recipe.servings && (
-                        <span className="mx-2">•</span>
-                      )}
-                      {recipe.servings && (
-                        <div>
-                          <FiUsers className="mr-1" />
-                          <span>{recipe.servings} servings</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="px-3 py-2">
-                    {recipe.meal_types &&
-                      recipe.meal_types.map((meal_type) => (
-                        <span
-                          key={meal_type.id}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2"
-                        >
-                          {meal_type.name}
-                        </span>
-                      ))}
-                    {recipe.diets &&
-                      recipe.diets.map((diet) => (
-                        <span
-                          key={diet.id}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2"
-                        >
-                          {diet.name}
-                        </span>
-                      ))}
-                  </div>
-                  <div className="p-2">
-                    <Link
-                      href={`/recipes/${recipe.id}`}
-                      className="text-primary hover:text-primary-dark font-medium p-2"
-                    >
-                      View Recipe
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <RecipeCard key={recipe.id} recipe={recipe} />
           ))
         )}
       </div>

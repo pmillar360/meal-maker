@@ -17,7 +17,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "allowJs": true
+    "allowJs": true,
+    "sourceMap": true
   },
   "include": [
     "next-env.d.ts",
