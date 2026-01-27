@@ -29,7 +29,7 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    console.log("Intercepting 401 response")
+    console.debug("Intercepting 401 response")
     // Prevent infinite retry loops
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -40,7 +40,7 @@ api.interceptors.response.use(
           // Update the token in the failed request and retry
           originalRequest.headers.Authorization = `Bearer ${getAccessToken()}`;
 
-          console.log("Successfully refreshed")
+          console.debug("Successfully refreshed")
           return api(originalRequest);
         }
       } catch (refreshError) {

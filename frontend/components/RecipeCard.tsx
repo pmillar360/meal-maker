@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { FaHeart } from 'react-icons/fa';
 import { addUserFavouriteRecipe, removeUserFavouriteRecipe, getUserFavouriteRecipes } from '../services/recipeService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -12,6 +13,7 @@ interface RecipeCardProps {
 
 export default function RecipeCard({ recipe }: RecipeCardProps) {
   const { isLoggedIn } = useAuth();
+  const { addToast } = useToast();
   const [isFavourite, setIsFavourite] = useState(recipe.isFavourite || false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,6 +26,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
           setIsFavourite(isFav);
         } catch (error) {
           console.error('Failed to fetch favourite recipes:', error);
+          addToast('Failed to fetch favourite recipes', 'error');
         }
       };
       checkIfFavourite();
@@ -44,6 +47,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         result = await removeUserFavouriteRecipe(recipe.id);
       } else {
         result = await addUserFavouriteRecipe(recipe.id);
+        addToast('Recipe added to favourites', 'success');
       }
       
       if (result) {
@@ -51,6 +55,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
       }
     } catch (error) {
       console.error('Failed to update favourite status:', error);
+      addToast('Failed to update favourite status', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -128,4 +133,8 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         </div> */}
       </div>
     </div>    </Link>  );
+}
+
+function userToast() {
+  throw new Error('Function not implemented.');
 }

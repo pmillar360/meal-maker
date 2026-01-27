@@ -3,6 +3,8 @@ import type { AppProps } from 'next/app';
 import Layout from '../components/Layout';
 import Head from 'next/head';
 import { AuthProvider } from '../context/AuthContext';
+import { ToastProvider } from '../context/ToastContext';
+import ToastContainer from '../components/ToastContainer';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -13,9 +15,12 @@ function MyApp({ Component, pageProps }: AppProps) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <AuthProvider>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
+        <ToastProvider>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+          <ToastContainer />
+        </ToastProvider>
       </AuthProvider>
     </>
   );
