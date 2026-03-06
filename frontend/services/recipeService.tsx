@@ -1,6 +1,11 @@
 import { api } from "./apiService";
 import { Diet, Ingredient, MealType, Recipe } from "./TypeService";
 
+interface FavouriteRecipeResponse {
+  user_id: number;
+  recipe_id: number;
+}
+
 export const getRecipes = async (
     filters: {
       ingredients?: Ingredient[];
@@ -57,19 +62,16 @@ export const getRecipes = async (
   };
 
   export const getUserFavouriteRecipes = async (): Promise<Recipe[]> => {
-    const response = await api.get<Recipe[]>("/users/favourites/");
+    const response = await api.get<Recipe[]>("/users/me/favourites/");
     return response.data;
   };
 
   export const addUserFavouriteRecipe = async (recipeId: number): Promise<boolean> => {
-    let queryParams = new URLSearchParams();
-    queryParams.append("recipe_id", recipeId.toString());
-
-    const response = await api.post<boolean>(`/users/favourites/?${queryParams}`);
-    return response.data;
+    const response = await api.put<FavouriteRecipeResponse>(`/users/me/favourites/${recipeId}`);
+    return response.data.recipe_id === recipeId;
   };
 
   export const removeUserFavouriteRecipe = async (recipeId: number): Promise<boolean> => {
-    const response = await api.delete<boolean>(`/users/favourites/${recipeId}`);
-    return response.data;
+    const response = await api.delete(`/users/me/favourites/${recipeId}`);
+    return response.status === 204;
   };

@@ -9,6 +9,10 @@ interface TokenResponse {
   token_type: string;
 }
 
+interface UserIdentityResponse {
+  username: string;
+}
+
 const setToken = (tokens: TokenResponse) => {
   accessToken = tokens.access_token;
 };
@@ -21,7 +25,11 @@ export const getAccessToken = () => accessToken;
 
 export const refreshAccessToken = async (): Promise<boolean> => {  
   try {
-    const response = await api.post<TokenResponse>('/refresh', {}, {withCredentials: true});
+    const response = await api.post<TokenResponse>(
+      "/auth/tokens/refresh",
+      {},
+      { withCredentials: true }
+    );
     setToken(response.data);
     return true;
   } catch (error) {
@@ -31,14 +39,14 @@ export const refreshAccessToken = async (): Promise<boolean> => {
 };
 
 export const registerUser = async (username: string, password: string) => {
-  const response = await api.post<TokenResponse>(`/register`, { username, password });
+  const response = await api.post<TokenResponse>(`/users`, { username, password });
   setToken(response.data);
   return response.data;
 };
 
 export const loginUser = async (username: string, password: string): Promise<boolean> => {
   try {
-    const response = await api.post<TokenResponse>("/token", { username, password });
+    const response = await api.post<TokenResponse>("/auth/tokens", { username, password });
     setToken(response.data);
     return true;
   } catch (error: any) {
@@ -63,8 +71,10 @@ export const getCurrentUser = async (): Promise<User> => {
   }
   
   try {
-    const response = await api.get<User>(`/me`);
-    return response.data;
+    const response = await api.get<UserIdentityResponse>(`/users/me`);
+    return {
+      username: response.data.username,
+    };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(error.response?.data?.detail || "Failed to get user data");
@@ -75,13 +85,9 @@ export const getCurrentUser = async (): Promise<User> => {
 
 export const logoutUser = async () => {
   try {
-    const response = await api.post("/logout");
-    
-    if (response) {
-      clearToken();
-    }
-  }
-  catch (error : any) {
+    await api.delete("/auth/tokens/current");
+    clearToken();
+  } catch (error: any) {
 
   }
 };

@@ -8,7 +8,7 @@ def test_create_shopping_list_item(authenticated_client):
     
     response = authenticated_client.post("/shopping-list/", json=item_data)
     
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
     assert data["name"] == item_data["name"]
     assert data["quantity"] == item_data["quantity"]
@@ -39,8 +39,8 @@ def test_update_shopping_list_item(authenticated_client, test_shopping_list_item
 def test_delete_shopping_list_item(authenticated_client, test_shopping_list_item):
     response = authenticated_client.delete(f"/shopping-list/{test_shopping_list_item.id}")
 
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == True
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.content == b""
     
     # Verify item is deleted
     get_response = authenticated_client.get("/shopping-list/")

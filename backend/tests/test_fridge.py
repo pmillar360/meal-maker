@@ -17,7 +17,7 @@ def test_add_fridge_item(authenticated_client):
 
     response = authenticated_client.post("/fridge/", json=item_data)
 
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
     assert data["name"] == item_data["name"]
     assert data["quantity"] == item_data["quantity"]
@@ -38,8 +38,8 @@ def test_update_fridge_item(authenticated_client, test_fridge_item):
 def test_delete_fridge_item(authenticated_client, test_fridge_item):
     response = authenticated_client.delete(f"/fridge/{test_fridge_item.id}")
 
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == True
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.content == b""
 
     # Verify item is deleted
     get_response = authenticated_client.get("/fridge")

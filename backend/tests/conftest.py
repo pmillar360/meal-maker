@@ -65,7 +65,7 @@ def client(db_session):
 def authenticated_client(client, test_user):
     
     # Authenticate the client
-    response = client.post("/token", json={"username": test_user.username, "password": "hashedpassword123"})
+    response = client.post("/auth/tokens", json={"username": test_user.username, "password": "hashedpassword123"})
 
     assert response.status_code == status.HTTP_200_OK
 

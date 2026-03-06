@@ -39,9 +39,7 @@ def test_get_recipes_with_meal_type(client, test_recipe):
 
 
 def test_add_user_favourite_recipe(authenticated_client, test_recipe):
-    item_data = {"recipe_id": test_recipe.id}
-
-    response = authenticated_client.post(f"/users/favourites/", params=item_data)
+    response = authenticated_client.put(f"/users/me/favourites/{test_recipe.id}")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -51,15 +49,13 @@ def test_add_user_favourite_recipe(authenticated_client, test_recipe):
 
 def test_get_user_favourite_recipes(authenticated_client, test_recipe):
     # First, add the recipe to the user's favourites
-    item_data = {"recipe_id": test_recipe.id}
-
-    response = authenticated_client.post(f"/users/favourites/", params=item_data)
+    response = authenticated_client.put(f"/users/me/favourites/{test_recipe.id}")
 
     # Check if the recipe was added to favourites
     assert response.status_code == status.HTTP_200_OK
 
     # Now, retrieve the user's favourite recipes
-    response = authenticated_client.get("/users/favourites/")
+    response = authenticated_client.get("/users/me/favourites/")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -70,19 +66,16 @@ def test_get_user_favourite_recipes(authenticated_client, test_recipe):
 
 def test_remove_user_favourite_recipe(authenticated_client, test_recipe):
     # First, add the recipe to the user's favourites
-    item_data = {"recipe_id": test_recipe.id}
-
-    response = authenticated_client.post(f"/users/favourites/", params=item_data)
+    response = authenticated_client.put(f"/users/me/favourites/{test_recipe.id}")
 
     # Check if the recipe was added to favourites
     assert response.status_code == status.HTTP_200_OK
 
     # Now, remove the recipe from favourites
-    response = authenticated_client.delete(f"/users/favourites/{test_recipe.id}")
+    response = authenticated_client.delete(f"/users/me/favourites/{test_recipe.id}")
 
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data is True
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.content == b""
 
 
 # TODO: Fix this test

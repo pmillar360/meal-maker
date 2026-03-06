@@ -10,10 +10,6 @@ from crud import shopping_list
 from crud import fridge
 from crud import users
 
-from util.auth import (
-    oauth2_scheme,
-)
-
 from . import models, schemas
 from .database import engine, get_db
 
@@ -94,7 +90,7 @@ def get_all_meal_types(db: Session = Depends(get_db)):
     return recipes.get_all_meal_types(db)
 
 # Shopping List Endpoints
-@app.post("/shopping-list/", response_model=schemas.ShoppingListItem)
+@app.post("/shopping-list/", response_model=schemas.ShoppingListItem, status_code=status.HTTP_201_CREATED)
 def create_shopping_list_item(item: schemas.ShoppingListItemCreate, db: Session = Depends(get_db), user = Depends(get_current_active_user)):
     """Add item to shopping list"""
     return shopping_list.add_shopping_list_item(db, user.id, item)
@@ -112,54 +108,55 @@ def update_shopping_list_item(item_id: int, item: schemas.ShoppingListItemUpdate
         raise HTTPException(status_code=404, detail="Item not found")
     return db_item
 
-@app.delete("/shopping-list/{item_id}", response_model=bool)
+@app.delete("/shopping-list/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_shopping_list_item(item_id: int, db: Session = Depends(get_db), user = Depends(get_current_active_user)):
     """Delete shopping list item"""
     result = shopping_list.delete_shopping_list_item(db, user.id, item_id)
     if not result:
         raise HTTPException(status_code=404, detail="Item not found")
-    return True
+    return None
 
-@app.post("/token")
-def login(
-    form_data: schemas.LoginRequest,
-    db: Session = Depends(get_db)):
-    """Log in a user and return access and refresh tokens"""
-    return users.login(form_data, db)
-
-@app.get("/me")
-def read_users_me(token: str = Depends(oauth2_scheme)):
-    """Checks if token is valid, returns user if so """
-    if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    
-    return users.get_current_user_by_token(token)
-
-@app.post("/register")
-def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Checks if username exists and if not, create the user account and return the access token"""
-    return users.register_user(user_data, db)
-
-@app.post("/refresh")
-def refresh_token(request: Request):
-    # request.cookies
+def _refresh_access_token_from_cookie(request: Request):
     refresh_token = request.cookies.get("refresh_token")
-
     if not refresh_token:
-        # TODO What to do if there is no refresh token? Return nothing? Raise error
-        # If 401 is raised here it will get called again because of the interceptor? Shouldn't worry about that
-        return {"access_token": None, "token_type": "bearer"}
-
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
     return users.refresh_token(refresh_token)
 
-@app.post("/logout")
-def logout_user(response: Response):
+def _clear_auth_cookies(response: Response):
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
-    return {"message": "Logged out successfully"}
+
+@app.post("/auth/tokens", response_model=schemas.TokenResponse)
+def create_auth_token(
+    form_data: schemas.LoginRequest,
+    db: Session = Depends(get_db),
+):
+    """Create access and refresh tokens for an existing user."""
+    return users.login(form_data, db)
+
+@app.get("/users/me", response_model=schemas.UserIdentity)
+def read_current_user(user: schemas.User = Depends(get_current_active_user)):
+    """Get the authenticated user's identity."""
+    return {"username": user.username}
+
+@app.post("/users", response_model=schemas.TokenResponse, status_code=status.HTTP_201_CREATED)
+def create_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
+    """Create a user account and issue initial auth tokens."""
+    return users.register_user(user_data, db)
+
+@app.post("/auth/tokens/refresh", response_model=schemas.TokenResponse)
+def refresh_auth_token(request: Request):
+    """Issue a new access token and rotate the refresh token cookie."""
+    return _refresh_access_token_from_cookie(request)
+
+@app.delete("/auth/tokens/current", status_code=status.HTTP_204_NO_CONTENT)
+def delete_current_auth_token(response: Response):
+    """Delete auth cookies for the current session."""
+    _clear_auth_cookies(response)
+    return None
 
 # Fridge Endpoints
-@app.post("/fridge/", response_model=schemas.FridgeItem)
+@app.post("/fridge/", response_model=schemas.FridgeItem, status_code=status.HTTP_201_CREATED)
 def add_fridge_item(item: schemas.FridgeItemCreate, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
     """Add item to fridge"""
     return fridge.add_fridge_item(db, user.id, item)
@@ -177,28 +174,39 @@ def update_fridge_item(item_id: int, item: schemas.FridgeItemUpdate, db: Session
         raise HTTPException(status_code=404, detail="Item not found")
     return db_item
 
-@app.delete("/fridge/{item_id}", response_model=bool)
+@app.delete("/fridge/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_fridge_item(item_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
     """Delete fridge item"""
     result = fridge.delete_fridge_item(db, user.id, item_id)
     if not result:
         raise HTTPException(status_code=404, detail="Item not found")
-    return True
+    return None
 
-@app.post("/users/favourites/", response_model=schemas.FavouriteRecipe)
-def add_user_favourite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
-    """Add a recipe to user's favourite recipes"""
+@app.put("/users/me/favourites/{recipe_id}", response_model=schemas.FavouriteRecipe)
+def put_user_favourite_recipe(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_current_active_user),
+):
+    """Idempotently add a recipe to the authenticated user's favourites."""
     return recipes.add_user_favourite_recipe(db, user.id, recipe_id)
 
-@app.delete("/users/favourites/{recipe_id}", response_model=bool)
-def remove_user_favourite_recipe(recipe_id: int, db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
-    """Remove a recipe from user's favourite recipes"""
+@app.get("/users/me/favourites/", response_model=List[schemas.Recipe])
+def get_current_user_favourite_recipes(
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_current_active_user),
+):
+    """Get the authenticated user's favourite recipes."""
+    return recipes.get_user_favourite_recipes(db, user.id)
+
+@app.delete("/users/me/favourites/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user_favourite_recipe(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_current_active_user),
+):
+    """Remove a recipe from the authenticated user's favourites."""
     result = recipes.remove_user_favourite_recipe(db, user.id, recipe_id)
     if not result:
         raise HTTPException(status_code=404, detail="Recipe not found in favourites")
-    return True
-
-@app.get("/users/favourites/", response_model=List[schemas.Recipe])
-def get_user_favourite_recipes(db: Session = Depends(get_db), user: schemas.User = Depends(get_current_active_user)):
-    """Get a user's favourite recipes"""
-    return recipes.get_user_favourite_recipes(db, user.id)
+    return None

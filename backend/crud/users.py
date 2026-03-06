@@ -83,7 +83,10 @@ def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     access_token = create_access_token({"sub": new_user.username})
     refresh_token = create_refresh_token({"sub": new_user.username})
 
-    response = JSONResponse({"access_token": access_token, "token_type": "bearer"})
+    response = JSONResponse(
+        {"access_token": access_token, "token_type": "bearer"},
+        status_code=status.HTTP_201_CREATED,
+    )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
