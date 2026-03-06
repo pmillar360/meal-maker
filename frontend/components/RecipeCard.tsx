@@ -6,6 +6,7 @@ import { FaHeart } from 'react-icons/fa';
 import { addUserFavouriteRecipe, removeUserFavouriteRecipe, getUserFavouriteRecipes } from '../services/recipeService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { toastCopy } from '../services/toastCopy';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -26,7 +27,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
           setIsFavourite(isFav);
         } catch (error) {
           console.error('Failed to fetch favourite recipes:', error);
-          addToast('Failed to fetch favourite recipes', 'error');
+          addToast(toastCopy.favourites.loadFailed, 'error');
         }
       };
       checkIfFavourite();
@@ -47,7 +48,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         result = await removeUserFavouriteRecipe(recipe.id);
       } else {
         result = await addUserFavouriteRecipe(recipe.id);
-        addToast('Recipe added to favourites', 'success');
+        addToast(toastCopy.favourites.added, 'success');
       }
       
       if (result) {
@@ -55,7 +56,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
       }
     } catch (error) {
       console.error('Failed to update favourite status:', error);
-      addToast('Failed to update favourite status', 'error');
+      addToast(toastCopy.favourites.updateFailed, 'error');
     } finally {
       setIsLoading(false);
     }

@@ -5,10 +5,13 @@ import { addFridgeIngredient } from '../../services/fridgeService';
 import { addShoppingListItem } from '../../services/ShoppingListService';
 import { TbFridge } from "react-icons/tb";
 import { FiShoppingCart } from "react-icons/fi";
+import { useToast } from '../../context/ToastContext';
+import { toastCopy } from '../../services/toastCopy';
 
 export default function Ingredients() {
     const [loading, setLoading] = useState(true);
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+    const { addToast } = useToast();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -33,7 +36,13 @@ export default function Ingredients() {
             quantity: "", // Default quantity, can be updated later
         };
 
-        await addFridgeIngredient(fridgeItem);
+        try {
+            await addFridgeIngredient(fridgeItem);
+            addToast(toastCopy.fridge.added(ingredient.name), 'success');
+        } catch (error) {
+            console.error('Error adding ingredient to fridge:', error);
+            addToast(toastCopy.fridge.addFailed(ingredient.name), 'error');
+        }
     }
 
     const handleAddToShoppingList = async (ingredient: Ingredient) => {
@@ -42,7 +51,13 @@ export default function Ingredients() {
             quantity: "", // Default quantity, can be updated later
         };
 
-        await addShoppingListItem(shoppingListItem);
+        try {
+            await addShoppingListItem(shoppingListItem);
+            addToast(toastCopy.shoppingList.added(ingredient.name), 'success');
+        } catch (error) {
+            console.error('Error adding ingredient to shopping list:', error);
+            addToast(toastCopy.shoppingList.addFailed(ingredient.name), 'error');
+        }
     }
 
     return (

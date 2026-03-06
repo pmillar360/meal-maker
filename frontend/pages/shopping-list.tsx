@@ -8,6 +8,8 @@ import {
 import { FaPlus, FaTrash, FaCheck } from "react-icons/fa";
 import { ShoppingListItem } from "../services/TypeService";
 import { addFridgeIngredient } from "../services/fridgeService";
+import { useToast } from "../context/ToastContext";
+import { toastCopy } from "../services/toastCopy";
 
 export default function ShoppingList() {
     const [items, setItems] = useState<ShoppingListItem[]>([]);
@@ -15,6 +17,7 @@ export default function ShoppingList() {
     const [newItem, setNewItem] = useState({ name: "", quantity: "" });
     const [error, setError] = useState<string | null>(null);
     const [addToFridge, setAddToFridge] = useState(true);
+    const { addToast } = useToast();
 
     useEffect(() => {
         fetchShoppingList();
@@ -29,6 +32,7 @@ export default function ShoppingList() {
         } catch (err) {
             console.error("Error fetching shopping list:", err);
             setError("Failed to load shopping list");
+            addToast(toastCopy.shoppingList.loadFailed, "error");
         } finally {
             setLoading(false);
         }
@@ -42,38 +46,54 @@ export default function ShoppingList() {
             setItems((prev) => [...prev, addedItem]);
             setNewItem({ name: "", quantity: "" });
             setError(null);
+            addToast(toastCopy.shoppingList.added(addedItem.name), "success");
         } catch (err) {
             console.error("Error adding item:", err);
             setError("Failed to add item");
+            addToast(toastCopy.shoppingList.addFailed(newItem.name), "error");
         }
     };
 
     const handleToggleComplete = async (item: ShoppingListItem) => {
+        const isCompleting = !item.completed;
         try {
             const updatedItem = await updateShoppingListItem(item.id, {
-                completed: !item.completed,
+                completed: isCompleting,
             });
             setItems((prev) =>
                 prev.map((i) => (i.id === updatedItem.id ? updatedItem : i))
             );
 
-            if (item.completed === false && addToFridge) {
-                // If marking as completed and addToFridge is true, add to fridge
-                await addFridgeIngredient({ name: item.name, quantity: item.quantity || "" });// Ignoring result
+            if (isCompleting && addToFridge) {
+                try {
+                    await addFridgeIngredient({ name: item.name, quantity: item.quantity || "" });
+                    addToast(toastCopy.shoppingList.markedCompleteAndAddedToFridge(item.name), "success");
+                } catch (fridgeError) {
+                    console.error("Error adding completed item to fridge:", fridgeError);
+                    addToast(toastCopy.shoppingList.markedCompleteFridgeAddFailed(item.name), "warning");
+                }
+            } else if (isCompleting) {
+                addToast(toastCopy.shoppingList.markedComplete(item.name), "success");
+            } else {
+                addToast(toastCopy.shoppingList.movedBackToActive(item.name), "info");
             }
         } catch (err) {
             console.error("Error updating item:", err);
             setError("Failed to update item");
+            addToast(toastCopy.shoppingList.updateFailed, "error");
         }
     };
 
     const handleDeleteItem = async (id: number) => {
+        const deletedItemName = items.find((item) => item.id === id)?.name;
         try {
             await deleteShoppingListItem(id);
             setItems((prev) => prev.filter((item) => item.id !== id));
+            addToast(toastCopy.shoppingList.removed(deletedItemName), "success");
         } catch (err) {
             console.error("Error deleting item:", err);
             setError("Failed to delete item");
+            addToast(toastCopy.shoppingList.removeFailed, "error");
         }
     };
 

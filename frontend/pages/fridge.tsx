@@ -3,12 +3,15 @@ import { FridgeItem, Recipe } from "../services/TypeService";
 import { addFridgeIngredient, deleteFridgeIngredient, getFridgeIngredients, updateFridgeIngredient } from "../services/fridgeService";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { getRecipesByIngredients } from "../services/recipeService";
+import { useToast } from "../context/ToastContext";
+import { toastCopy } from "../services/toastCopy";
 
 export default function Fridge() {
     const [ingredients, setIngredients] = useState<FridgeItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [newItem, setNewItem] = useState({ name: "", quantity: "" });
     const [recipeSuggestions, setRecipeSuggestions] = useState<Recipe[]>([]);
+    const { addToast } = useToast();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -19,21 +22,24 @@ export default function Fridge() {
                 setIngredients(fridgeIngredients)
             } catch (error) {
                 console.error("Error fetching data:", error);
+                addToast(toastCopy.fridge.loadFailed, "error");
             } finally {
                 setLoading(false)
             }
         };
 
         fetchData();
-    }, []);
+    }, [addToast]);
 
     const handleDeleteItem = async (id: number) => {
+        const deletedItemName = ingredients.find((item) => item.id === id)?.name;
         try {
             await deleteFridgeIngredient(id);
             setIngredients((prev) => prev.filter((item) => item.id !== id));
+            addToast(toastCopy.fridge.removed(deletedItemName), "success");
         } catch (err) {
             console.error("Error deleting item:", err);
-            // setError("Failed to delete item");
+            addToast(toastCopy.fridge.removeFailed, "error");
         }
     };
 
@@ -45,7 +51,6 @@ export default function Fridge() {
             );
         } catch (err) {
             console.error("Error updating quantity:", err);
-            // setError("Failed to update quantity");
         }
     };
 
@@ -56,10 +61,10 @@ export default function Fridge() {
             const addedItem = await addFridgeIngredient(newItem);
             setIngredients((prev) => [...prev, addedItem]);
             setNewItem({ name: "", quantity: "" });
-            // setError(null);
+            addToast(toastCopy.fridge.added(addedItem.name), "success");
         } catch (err) {
             console.error("Error adding item:", err);
-            // setError("Failed to add item");
+            addToast(toastCopy.fridge.addFailed(newItem.name), "error");
         }
     };
 

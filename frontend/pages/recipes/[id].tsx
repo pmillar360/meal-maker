@@ -6,10 +6,13 @@ import { Recipe } from '../../services/TypeService';
 import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaUtensils, FaList, FaCheck } from 'react-icons/fa';
 import { getRecipeById } from '../../services/recipeService';
+import { useToast } from '../../context/ToastContext';
+import { toastCopy } from '../../services/toastCopy';
 
 export default function RecipeDetail() {
     const router = useRouter();
     const { id } = router.query as { id?: string };
+    const { addToast } = useToast();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
@@ -41,8 +44,10 @@ export default function RecipeDetail() {
         try {
             await addShoppingListItem({ name: ingredient.ingredient.name, quantity: ingredient.quantity + " " + ingredient.unit });
             setAddedItems(prev => [...prev, ingredient.ingredient.id]);
+            addToast(toastCopy.shoppingList.added(ingredient.ingredient.name), 'success');
         } catch (error) {
             console.error("Error adding to shopping list:", error);
+            addToast(toastCopy.shoppingList.addFailed(ingredient.ingredient.name), 'error');
         } finally {
             setAddingToList(false);
         }
