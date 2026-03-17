@@ -48,3 +48,4 @@ backend/.coverage
 
 .devcontainer
 .notes/
+.github/copilot-instructions.md
