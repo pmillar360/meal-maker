@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Recipe } from '../services/TypeService';
-import { getFeaturedRecipes } from '../services/recipeService';
+import { getFeaturedRecipes, getUserFavouriteRecipes } from '../services/recipeService';
 import RecipeCard from '../components/RecipeCard';
+import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
+  const { isLoggedIn } = useAuth();
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
+  const [favouriteRecipeIds, setFavouriteRecipeIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +24,22 @@ export default function Home() {
     };
     loadFeaturedRecipes();
   }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      const loadFavourites = async () => {
+        try {
+          const favourites = await getUserFavouriteRecipes();
+          setFavouriteRecipeIds(favourites.map(f => f.id));
+        } catch (error) {
+          console.error("Failed to load favourite recipes:", error);
+        }
+      };
+      loadFavourites();
+    } else {
+      setFavouriteRecipeIds([]);
+    }
+  }, [isLoggedIn]);
 
   return (
     <div className="space-y-10">
@@ -75,7 +94,11 @@ export default function Home() {
             <p>Loading featured recipes...</p>
           ) : featuredRecipes.length > 0 ? (
             featuredRecipes.map(recipe => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard 
+                key={recipe.id} 
+                recipe={recipe} 
+                favouriteRecipeIds={favouriteRecipeIds}
+              />
             ))
           ) : (
             <p className="text-gray-500">No featured recipes available</p>

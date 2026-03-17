@@ -3,36 +3,26 @@ import { FiClock, FiUsers } from 'react-icons/fi';
 import { Recipe } from '../services/TypeService';
 import React, { useState, useEffect } from 'react';
 import { FaHeart } from 'react-icons/fa';
-import { addUserFavouriteRecipe, removeUserFavouriteRecipe, getUserFavouriteRecipes } from '../services/recipeService';
+import { addUserFavouriteRecipe, removeUserFavouriteRecipe } from '../services/recipeService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { toastCopy } from '../services/toastCopy';
 
 interface RecipeCardProps {
   recipe: Recipe;
+  favouriteRecipeIds?: number[];
 }
 
-export default function RecipeCard({ recipe }: RecipeCardProps) {
+export default function RecipeCard({ recipe, favouriteRecipeIds = [] }: RecipeCardProps) {
   const { isLoggedIn } = useAuth();
   const { addToast } = useToast();
-  const [isFavourite, setIsFavourite] = useState(recipe.isFavourite || false);
+  const [isFavourite, setIsFavourite] = useState(recipe.isFavourite || favouriteRecipeIds.includes(recipe.id));
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isLoggedIn) {
-      const checkIfFavourite = async () => {
-        try {
-          const favourites = await getUserFavouriteRecipes();
-          const isFav = favourites.some(fav => fav.id === recipe.id);
-          setIsFavourite(isFav);
-        } catch (error) {
-          console.error('Failed to fetch favourite recipes:', error);
-          addToast(toastCopy.favourites.loadFailed, 'error');
-        }
-      };
-      checkIfFavourite();
-    }
-  }, [isLoggedIn, recipe.id]);
+    // Update isFavourite based on the favouriteRecipeIds prop
+    setIsFavourite(favouriteRecipeIds.includes(recipe.id));
+  }, [favouriteRecipeIds, recipe.id]);
 
   const handleFavouriteClick = async (
     e: React.MouseEvent<HTMLButtonElement>,
