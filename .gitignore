@@ -27,7 +27,8 @@ logs/
 Thumbs.db
 
 # IDEs and editors
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo
@@ -49,4 +50,3 @@ backend/.coverage
 .devcontainer
 .notes/
 .github/copilot-instructions.md
-!.vscode/launch.json
