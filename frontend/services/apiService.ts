@@ -45,6 +45,11 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Network error (no response) means the server is down or sleeping
+    if (!error.response && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('server:down'));
+    }
+
     console.debug("Intercepting 401 response")
 
     // Never retry refresh endpoints to avoid recursive refresh loops.

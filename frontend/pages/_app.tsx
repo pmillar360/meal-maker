@@ -5,6 +5,8 @@ import Head from 'next/head';
 import { AuthProvider } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import ToastContainer from '../components/ToastContainer';
+import { ServerStatusProvider } from '../context/ServerStatusContext';
+import ServerWakingOverlay from '../components/ServerWakingOverlay';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -14,14 +16,17 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name="description" content="Find and organize recipes based on available ingredients" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <AuthProvider>
-        <ToastProvider>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
-          <ToastContainer />
-        </ToastProvider>
-      </AuthProvider>
+      <ServerStatusProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+            <ToastContainer />
+            <ServerWakingOverlay />
+          </ToastProvider>
+        </AuthProvider>
+      </ServerStatusProvider>
     </>
   );
 }

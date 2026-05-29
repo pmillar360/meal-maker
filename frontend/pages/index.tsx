@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import Link from 'next/link';
 import { Recipe } from '../services/TypeService';
 import { getFeaturedRecipes, getUserFavouriteRecipes } from '../services/recipeService';
@@ -16,10 +17,14 @@ export default function Home() {
       try {
         const recipes = await getFeaturedRecipes(9);
         setFeaturedRecipes(recipes);
-      } catch (error) {
-        console.error("Failed to load featured recipes:", error);
-      } finally {
         setLoading(false);
+      } catch (error) {
+        if (axios.isAxiosError(error) && !error.response) {
+          // Network error — server is asleep, overlay handles it, keep loading state
+        } else {
+          console.error("Failed to load featured recipes:", error);
+          setLoading(false);
+        }
       }
     };
     loadFeaturedRecipes();
