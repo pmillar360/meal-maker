@@ -1,10 +1,13 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { getAccessToken, refreshAccessToken } from './UserService';
 
-// Connect to localhost:8000 if NEXT_PUBLIC_API_URL is not provided
-const API_URL = process.env.NEXT_PUBLIC_API_URL 
-  ? `${process.env.NEXT_PUBLIC_API_URL}:8000`
-  : 'http://localhost:8000';
+export const resolveApiUrl = (): string => {
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const resolved = rawUrl || 'http://localhost:8000';
+  return resolved.replace(/\/+$/, '');
+};
+
+const API_URL = resolveApiUrl();
 
 
 export const api = axios.create({
