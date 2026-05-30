@@ -22,6 +22,11 @@ def read_root():
     return {"message": "Welcome to Meal Maker API"}
 
 
+# Health Check Endpoint
+@router.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 # Recipe Endpoints
 @router.get("/recipes/", response_model=List[schemas.Recipe])
 def get_recipes(

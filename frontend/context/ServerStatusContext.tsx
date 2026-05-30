@@ -23,7 +23,7 @@ export function ServerStatusProvider({ children }: { children: React.ReactNode }
 
   const checkHealth = async (): Promise<boolean> => {
     try {
-      await axios.get(`${API_URL}`, { timeout: 8000, withCredentials: false });
+      await axios.get(`${API_URL}/health`, { timeout: 8000, withCredentials: false });
       return true;
     } catch (error) {
       if (axios.isAxiosError(error) && !error.response) {
