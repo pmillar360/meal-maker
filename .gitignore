@@ -44,9 +44,11 @@ Thumbs.db
 
 /frontend/node_modules
 /frontend/.next
-backend/.coverage
+
+/backend/.coverage
 .coverage
 
 .devcontainer
 .notes/
 .github/copilot-instructions.md
+frontend/next-env.d.ts
