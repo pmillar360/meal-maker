@@ -51,4 +51,4 @@ Thumbs.db
 .devcontainer
 .notes/
 .github/copilot-instructions.md
-frontend/next-env.d.ts
+/frontend/next-env.d.ts
