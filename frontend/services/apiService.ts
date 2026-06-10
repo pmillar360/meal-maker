@@ -4,7 +4,18 @@ import { getAccessToken, refreshAccessToken } from './UserService';
 export const resolveApiUrl = (): string => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
   const resolved = rawUrl || 'http://localhost:8000';
-  return resolved.replace(/\/+$/, '');
+
+  try {
+    const parsed = new URL(resolved);
+    // Render public URLs should not include :8000. Keep localhost dev ports intact.
+    if (parsed.hostname.endsWith('onrender.com') && parsed.port === '8000') {
+      parsed.port = '';
+    }
+    return parsed.toString().replace(/\/+$/, '');
+  } catch {
+    // Fallback for malformed env values: preserve existing behavior.
+    return resolved.replace(/\/+$/, '');
+  }
 };
 
 const API_URL = resolveApiUrl();
