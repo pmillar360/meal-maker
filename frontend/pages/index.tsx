@@ -41,8 +41,6 @@ export default function Home() {
         }
       };
       loadFavourites();
-    } else {
-      setFavouriteRecipeIds([]);
     }
   }, [isLoggedIn]);
 

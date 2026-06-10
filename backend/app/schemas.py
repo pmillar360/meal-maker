@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 # Schemas are for frontend <-> backend communication
@@ -8,9 +8,8 @@ class DietBase(BaseModel):
 
 class Diet(DietBase):
     id: int
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class MealTypeBase(BaseModel):
     name: str
@@ -18,8 +17,7 @@ class MealTypeBase(BaseModel):
 class MealType(MealTypeBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class IngredientBase(BaseModel):
     name: str
@@ -27,9 +25,8 @@ class IngredientBase(BaseModel):
 
 class Ingredient(IngredientBase):
     id: int
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class RecipeIngredientBase(BaseModel):
     quantity: Optional[str] = None
@@ -38,8 +35,7 @@ class RecipeIngredientBase(BaseModel):
 class RecipeIngredient(RecipeIngredientBase):
     ingredient: Ingredient
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RecipeBase(BaseModel):
     title: str
@@ -51,9 +47,8 @@ class RecipeBase(BaseModel):
 
 class Recipe(RecipeBase):
     id: int
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class RecipeDetail(RecipeBase):
     id: int
@@ -62,9 +57,8 @@ class RecipeDetail(RecipeBase):
     cooking_time: Optional[int] = None
     servings: Optional[int] = None
     description: Optional[str] = None
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class ShoppingListItemBase(BaseModel):
     name: str
@@ -77,9 +71,8 @@ class ShoppingListItemCreate(ShoppingListItemBase):
 class ShoppingListItem(ShoppingListItemBase):
     id: int
     completed: bool
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class ShoppingListItemUpdate(BaseModel):
     quantity: Optional[str] = None
@@ -109,9 +102,8 @@ class FridgeItemCreate(FridgeItemBase):
 
 class FridgeItem(FridgeItemBase):
     id: int
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class FridgeItemUpdate(BaseModel):
     quantity: Optional[str] = None
@@ -125,13 +117,11 @@ class User(UserBase):
     favourite_recipes: List[Recipe] = []
     shopping_list_items: List[ShoppingListItem] = []
     fridge_items: List[FridgeItem] = []
-        
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 class FavouriteRecipe(BaseModel):
     user_id: int
     recipe_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
