@@ -20,15 +20,14 @@ app = FastAPI(title="Meal Maker API")
 
 # Comma-separated list of allowed frontend origins, e.g. "http://localhost:3000,https://app.example.com"
 cors_allow_origins = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:3000").split(",")
-    if origin.strip()
+    "http://localhost:3000",
+    "https://meal-maker-frontend.onrender.com/",
 ]
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_allow_origins,
+    allow_origins=cors_allow_origins,  # Allow all origins for development; change to cors_allow_origins for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
