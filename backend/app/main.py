@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from . import models
-from .database import engine
+from .database import engine, SQLALCHEMY_DATABASE_URL
 from .routes import router
 
 from util.logger import intialize_logger, get_logger
@@ -13,8 +13,9 @@ intialize_logger()
 
 logger = get_logger()
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    # Keep local SQLite bootstrap simple; production should rely on Alembic migrations.
+    models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Meal Maker API")
 
@@ -23,10 +24,7 @@ cors_origins_env = os.getenv("CORS_ALLOW_ORIGINS")
 if cors_origins_env:
     cors_allow_origins = [origin.strip().rstrip("/") for origin in cors_origins_env.split(",") if origin.strip()]
 else:
-    cors_allow_origins = [
-        "http://localhost:3000",
-        "https://meal-maker-frontend.onrender.com",
-    ]
+    cors_allow_origins = ["*"] # Allow all origins for development; change to specific origins for production
 
 # Add CORS middleware
 app.add_middleware(

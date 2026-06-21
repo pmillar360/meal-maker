@@ -94,3 +94,16 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Check the server health endpoint
+export const checkServerHealth = async (): Promise<boolean> => {
+  try {
+    await axios.get(`${API_URL}/health`, { timeout: 8000, withCredentials: false });
+    return true;
+  } catch (error) {
+    if (axios.isAxiosError(error) && !error.response) {
+      return false;
+    }
+    return true;
+  }
+};

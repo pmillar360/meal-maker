@@ -2,20 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Next: Dev Server",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "npm run dev",
-      "cwd": "${workspaceFolder}/frontend"
-    },
-    {
-      "name": "Next: Client",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/frontend"
-    },
-    {
       "name": "FastAPI",
       "type": "debugpy",
       "request": "launch",

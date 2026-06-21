@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
 from util.auth import hash_password
 
-os.environ["DATABASE_URL"] = "sqlite:///./backend/tests/test_db.db"
+TEST_DB_PATH = Path(__file__).resolve().parent / "test_db.db"
+os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH.as_posix()}"
 
 import pytest
 from fastapi import status

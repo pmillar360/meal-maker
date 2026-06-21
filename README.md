@@ -20,6 +20,7 @@ The current product plan includes the following core features:
 - Frontend: Next.js, React, and Tailwind CSS
 - Backend: FastAPI, SQLAlchemy, Alembic, and PostgreSQL
 - Local development fallback: SQLite can be used when a database URL is not configured
+- Production deployment: set `DATABASE_URL` to a Postgres connection string, such as the Neon database used by Render
 - Optional recipe integrations: Spoonacular or Edamam
 - Optional rapid auth and storage alternative: Firebase
 
@@ -69,6 +70,8 @@ cd backend
 alembic revision -m "describe change"
 alembic upgrade head
 ```
+
+For production deploys, run `alembic upgrade head` against the live Postgres database before the app starts serving traffic. The app keeps SQLite as the default local fallback, but production should use the configured Postgres `DATABASE_URL`.
 
 ## Testing and Verification
 
