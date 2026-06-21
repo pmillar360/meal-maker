@@ -1,7 +1,7 @@
 """create tables for postgres
 
 Revision ID: 7bd3a31eecbf
-Revises: 0e4d21774269
+Revises: 940e8bf5e964
 Create Date: 2026-06-21 23:47:37.225912
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '7bd3a31eecbf'
-down_revision: Union[str, None] = '0e4d21774269'
+down_revision: Union[str, None] = '940e8bf5e964'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
