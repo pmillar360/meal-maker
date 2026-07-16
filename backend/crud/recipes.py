@@ -8,6 +8,41 @@ from app import models
 from crud.ingredients import create_local_ingredients_from_spoonacular_recipe
 from util.spoonacular import get_external_recipe_by_id, get_random_recipes, get_recipes_by_ingredients as get_recipes_by_ingredients_external
 
+
+def _normalize_ingredient_name(name: str) -> str:
+    return (name or "").strip().lower()
+
+
+def _get_user_fridge_name_set(db: Session, user_id: int) -> set[str]:
+    fridge_items = db.query(models.FridgeItem).filter(models.FridgeItem.user_id == user_id).all()
+    return {
+        _normalize_ingredient_name(item.name)
+        for item in fridge_items
+        if _normalize_ingredient_name(item.name)
+    }
+
+
+def _build_ingredient_statuses(recipe: models.Recipe, fridge_name_set: set[str]):
+    ingredient_statuses = []
+    missing_recipe_ingredients = []
+
+    for recipe_ingredient in recipe.recipe_ingredients:
+        ingredient_name = _normalize_ingredient_name(recipe_ingredient.ingredient.name)
+        has_in_fridge = ingredient_name in fridge_name_set
+
+        ingredient_statuses.append({
+            "ingredient": recipe_ingredient.ingredient,
+            "quantity": recipe_ingredient.quantity,
+            "unit": recipe_ingredient.unit,
+            "has_in_fridge": has_in_fridge,
+            "missing": not has_in_fridge,
+        })
+
+        if not has_in_fridge:
+            missing_recipe_ingredients.append(recipe_ingredient)
+
+    return ingredient_statuses, missing_recipe_ingredients
+
 def get_recipe_by_id(db: Session, recipe_id: int):
     recipe = db.query(models.Recipe).filter(
     or_(
@@ -144,6 +179,60 @@ def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[st
                 continue
     
     return recipes
+
+
+def get_recipes_with_fridge_availability(
+    db: Session,
+    user_id: int,
+    ingredients: List[str] = [],
+    meal_types: Optional[List[str]] = None,
+    diet: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+):
+    fridge_name_set = _get_user_fridge_name_set(db, user_id)
+    recipe_list = get_recipes(db, ingredients, meal_types, diet, skip, limit)
+
+    availability_summaries = []
+
+    for recipe in recipe_list:
+        ingredient_statuses, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_name_set)
+        total_ingredients = len(ingredient_statuses)
+        missing_count = len(missing_recipe_ingredients)
+
+        availability_summaries.append({
+            "recipe": recipe,
+            "total_ingredients": total_ingredients,
+            "available_ingredients": total_ingredients - missing_count,
+            "missing_ingredients": missing_count,
+            "missing_ingredient_names": [item.ingredient.name for item in missing_recipe_ingredients],
+        })
+
+    return availability_summaries
+
+
+def get_recipe_availability_for_user(db: Session, user_id: int, recipe_id: int):
+    recipe = get_recipe_by_id(db, recipe_id)
+    fridge_name_set = _get_user_fridge_name_set(db, user_id)
+    ingredient_statuses, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_name_set)
+    total_ingredients = len(ingredient_statuses)
+    missing_count = len(missing_recipe_ingredients)
+
+    return {
+        "recipe": recipe,
+        "ingredient_statuses": ingredient_statuses,
+        "total_ingredients": total_ingredients,
+        "available_ingredients": total_ingredients - missing_count,
+        "missing_ingredients": missing_count,
+        "missing_ingredient_names": [item.ingredient.name for item in missing_recipe_ingredients],
+    }
+
+
+def get_missing_recipe_ingredients_for_user(db: Session, user_id: int, recipe_id: int):
+    recipe = get_recipe_by_id(db, recipe_id)
+    fridge_name_set = _get_user_fridge_name_set(db, user_id)
+    _, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_name_set)
+    return missing_recipe_ingredients
 
 def create_local_recipe_from_spoonacular(db: Session, data: dict, is_featured_new: bool = False):
     """Given an external object, convert to local db model"""

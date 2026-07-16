@@ -1,21 +1,24 @@
-import { useState, useEffect, MouseEvent } from "react";
+import { useState, useEffect } from "react";
 import { FaFilter, FaTimes } from "react-icons/fa";
 import { Diet, Ingredient, MealType } from "../../services/TypeService";
-import { Recipe } from "../../services/TypeService";
+import { Recipe, RecipeAvailabilitySummary } from "../../services/TypeService";
 import MultiSelectAutoComplete, {
   Option,
 } from "../../components/MultiSelectAutoComplete";
 import {
   getRecipes,
+  getRecipesWithFridgeAvailability,
   getAllMealTypes,
   getAllDiets,
-  addUserFavouriteRecipe,
 } from "../../services/recipeService";
 import { getAllIngredients } from "../../services/ingredientService";
 import RecipeCard from "../../components/RecipeCard";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Recipes() {
+  const { isLoggedIn } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [availabilityByRecipeId, setAvailabilityByRecipeId] = useState<Record<number, RecipeAvailabilitySummary>>({});
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [mealTypes, setMealTypes] = useState<MealType[]>([]);
   const [diets, setDiets] = useState<Diet[]>([]);
@@ -61,9 +64,19 @@ export default function Recipes() {
     const fetchRecipesData = async () => {
       setLoading(true);
       try {
-        const [recipesData] = await Promise.all([getRecipes(filters)]);
-
-        setRecipes(recipesData);
+        if (isLoggedIn) {
+          const availabilityData = await getRecipesWithFridgeAvailability(filters);
+          setRecipes(availabilityData.map((item) => item.recipe));
+          const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
+          availabilityData.forEach((item) => {
+            nextAvailabilityMap[item.recipe.id] = item;
+          });
+          setAvailabilityByRecipeId(nextAvailabilityMap);
+        } else {
+          const recipesData = await getRecipes(filters);
+          setRecipes(recipesData);
+          setAvailabilityByRecipeId({});
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -71,7 +84,7 @@ export default function Recipes() {
       }
     };
     fetchRecipesData();
-  }, [filters]);
+  }, [filters, isLoggedIn]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -238,7 +251,11 @@ export default function Recipes() {
           </div>
         ) : (
           recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              availability={availabilityByRecipeId[recipe.id]}
+            />
           ))
         )}
       </div>

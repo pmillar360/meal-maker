@@ -1,5 +1,13 @@
 import { api } from "./apiService";
-import { Diet, Ingredient, MealType, Recipe } from "./TypeService";
+import {
+  Diet,
+  Ingredient,
+  MealType,
+  MissingIngredientsAddedResponse,
+  Recipe,
+  RecipeAvailabilityDetail,
+  RecipeAvailabilitySummary,
+} from "./TypeService";
 
 interface FavouriteRecipeResponse {
   user_id: number;
@@ -30,6 +38,40 @@ export const getRecipes = async (
     return response.data;
   };
 
+export const getRecipesWithFridgeAvailability = async (
+  filters: {
+    ingredients?: Ingredient[];
+    mealTypes?: MealType[];
+    diet?: string;
+  } = {}
+): Promise<RecipeAvailabilitySummary[]> => {
+  const { ingredients, mealTypes: mealType, diet } = filters;
+  const queryParams = new URLSearchParams();
+
+  if (ingredients && ingredients.length > 0) {
+    queryParams.append(
+      "ingredients",
+      ingredients.map((x) => x.name).toString()
+    );
+  }
+
+  if (mealType && mealType.length > 0) {
+    queryParams.append(
+      "meal_types",
+      mealType.map((x) => x.name).toString()
+    );
+  }
+
+  if (diet) {
+    queryParams.append("diet", diet);
+  }
+
+  const response = await api.get<RecipeAvailabilitySummary[]>(
+    `/recipes/with-fridge-availability/?${queryParams}`
+  );
+  return response.data;
+};
+
   export const getFeaturedRecipes = async (limit: number = 10): Promise<Recipe[]> => {
     let queryParams = new URLSearchParams();
     if (limit) queryParams.append("number", limit.toString()); // Not sure if this is correct
@@ -48,6 +90,20 @@ export const getRecipes = async (
 
   export const getRecipeById = async (id: number | string): Promise<Recipe> => {
     const response = await api.get<Recipe>(`/recipes/${id}`);
+    return response.data;
+  };
+
+  export const getRecipeAvailabilityById = async (id: number | string): Promise<RecipeAvailabilityDetail> => {
+    const response = await api.get<RecipeAvailabilityDetail>(`/recipes/${id}/availability/`);
+    return response.data;
+  };
+
+  export const addMissingIngredientsToShoppingList = async (
+    id: number | string
+  ): Promise<MissingIngredientsAddedResponse> => {
+    const response = await api.post<MissingIngredientsAddedResponse>(
+      `/recipes/${id}/missing-to-shopping-list/`
+    );
     return response.data;
   };
 

@@ -60,6 +60,30 @@ class RecipeDetail(RecipeBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class RecipeIngredientAvailability(BaseModel):
+    ingredient: Ingredient
+    quantity: Optional[str] = None
+    unit: Optional[str] = None
+    has_in_fridge: bool
+    missing: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+class RecipeAvailabilitySummary(BaseModel):
+    recipe: Recipe
+    total_ingredients: int
+    available_ingredients: int
+    missing_ingredients: int
+    missing_ingredient_names: List[str] = []
+
+class RecipeAvailabilityDetail(BaseModel):
+    recipe: RecipeDetail
+    ingredient_statuses: List[RecipeIngredientAvailability] = []
+    total_ingredients: int
+    available_ingredients: int
+    missing_ingredients: int
+    missing_ingredient_names: List[str] = []
+
 class ShoppingListItemBase(BaseModel):
     name: str
     quantity: Optional[str] = None
@@ -73,6 +97,10 @@ class ShoppingListItem(ShoppingListItemBase):
     completed: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+class MissingIngredientsAddedResponse(BaseModel):
+    created_items: List[ShoppingListItem] = []
+    created_count: int
 
 class ShoppingListItemUpdate(BaseModel):
     quantity: Optional[str] = None

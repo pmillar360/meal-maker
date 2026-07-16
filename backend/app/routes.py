@@ -46,10 +46,55 @@ def get_recipes(
     return recipes.get_recipes(db, ingredient_list, meal_type_list, diet, skip, limit)
 
 
+@router.get("/recipes/with-fridge-availability/", response_model=List[schemas.RecipeAvailabilitySummary])
+def get_recipes_with_fridge_availability(
+    ingredients: Optional[str] = Query(None, description="Comma separated list of ingredients"),
+    meal_types: Optional[str] = Query(
+        None,
+        description="Comma separated list of meal types (breakfast, lunch, dinner, snack)",
+    ),
+    diet: Optional[str] = Query(None, description="Dietary restriction (vegetarian, vegan, etc)"),
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_active_user),
+):
+    ingredient_list = ingredients.split(",") if ingredients else []
+    meal_type_list = meal_types.split(",") if meal_types else []
+    return recipes.get_recipes_with_fridge_availability(db, user.id, ingredient_list, meal_type_list, diet, skip, limit)
+
+
 @router.get("/recipes/{recipe_id}", response_model=schemas.RecipeDetail)
 def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     """Get detailed information for a specific recipe"""
     return recipes.get_recipe_by_id(db, recipe_id)
+
+
+@router.get("/recipes/{recipe_id}/availability/", response_model=schemas.RecipeAvailabilityDetail)
+def get_recipe_availability(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_active_user),
+):
+    return recipes.get_recipe_availability_for_user(db, user.id, recipe_id)
+
+
+@router.post(
+    "/recipes/{recipe_id}/missing-to-shopping-list/",
+    response_model=schemas.MissingIngredientsAddedResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_missing_ingredients_to_shopping_list(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_active_user),
+):
+    missing_recipe_ingredients = recipes.get_missing_recipe_ingredients_for_user(db, user.id, recipe_id)
+    created_items = shopping_list.add_recipe_ingredients_to_shopping_list(db, user.id, missing_recipe_ingredients)
+    return {
+        "created_items": created_items,
+        "created_count": len(created_items),
+    }
 
 
 @router.get("/recipes/featured/", response_model=List[schemas.RecipeDetail])

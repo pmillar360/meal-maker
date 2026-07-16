@@ -33,3 +33,30 @@ def delete_shopping_list_item(db: Session, user_id:int, item_id: int):
         db.commit()
         return True
     return False
+
+
+def add_recipe_ingredients_to_shopping_list(db: Session, user_id: int, missing_recipe_ingredients: list[models.RecipeIngredient]):
+    """Create shopping list items from missing recipe ingredients for a user."""
+    created_items = []
+
+    for recipe_ingredient in missing_recipe_ingredients:
+        quantity_parts = [part for part in [recipe_ingredient.quantity, recipe_ingredient.unit] if part]
+        quantity_text = " ".join(quantity_parts) if quantity_parts else None
+
+        db_item = models.ShoppingListItem(
+            user_id=user_id,
+            name=recipe_ingredient.ingredient.name,
+            quantity=quantity_text,
+            category=recipe_ingredient.ingredient.category,
+            completed=False,
+        )
+
+        db.add(db_item)
+        created_items.append(db_item)
+
+    db.commit()
+
+    for item in created_items:
+        db.refresh(item)
+
+    return created_items

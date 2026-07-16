@@ -27,6 +27,36 @@ export interface RecipeIngredient {
   unit: string;
 }
 
+export interface RecipeIngredientAvailability {
+  ingredient: Ingredient;
+  quantity?: string;
+  unit?: string;
+  has_in_fridge: boolean;
+  missing: boolean;
+}
+
+export interface RecipeAvailabilitySummary {
+  recipe: Recipe;
+  total_ingredients: number;
+  available_ingredients: number;
+  missing_ingredients: number;
+  missing_ingredient_names: string[];
+}
+
+export interface RecipeAvailabilityDetail {
+  recipe: Recipe;
+  ingredient_statuses: RecipeIngredientAvailability[];
+  total_ingredients: number;
+  available_ingredients: number;
+  missing_ingredients: number;
+  missing_ingredient_names: string[];
+}
+
+export interface MissingIngredientsAddedResponse {
+  created_items: ShoppingListItem[];
+  created_count: number;
+}
+
 export interface ShoppingListItem {
   id: number;
   name: string;
