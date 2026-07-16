@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import { addShoppingListItem } from '../../services/ShoppingListService';
 import { RecipeIngredient } from '../../services/TypeService';
 import { Recipe } from '../../services/TypeService';
@@ -75,8 +76,8 @@ export default function RecipeDetail() {
                     </Link>
                     <h1 className="text-3xl font-bold ml-4">{recipe.title}</h1>
                 </div>
-                <div>
-                    <img alt={recipe.title} src={recipe.image_url} className='w-full h-56 object-cover rounded-lg sm:grid-cols-2'/>
+                <div className="relative h-56 w-full overflow-hidden rounded-lg">
+                    <Image alt={recipe.title} src={recipe.image_url} fill className="object-cover" unoptimized />
                 </div>
                 <div className='bg-white rounded-lg shadow-md gap-4 p-6 mb-8'>
                     <h2 className='text-xl font-semibold mb-4'>Description</h2>
@@ -114,23 +115,36 @@ export default function RecipeDetail() {
                 <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                     <h2 className="text-xl font-semibold mb-4">Ingredients</h2>
                     {recipe.recipe_ingredients && recipe.recipe_ingredients.length > 0 ? (
-                        <ul className="list-disc list-inside">
-                            {recipe.recipe_ingredients.map(ingredient => (
-                                <li key={ingredient.ingredient.id} className="flex justify-between items-center py-2">
-                                    <span className="text-gray-700">{ingredient.ingredient.name}</span>
-                                    <span>{ingredient.quantity} {ingredient.unit}</span>
-                                    <button
-                                        onClick={() => handleAddToShoppingList(ingredient)}
-                                        className={`ml-4 px-3 py-1 rounded-lg text-white focus:outline-hidden ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
-                                            }`}
-                                        disabled={addingToList}
-                                    >
-                                        {addedItems.includes(ingredient.ingredient.id) ? <FaCheck className="inline-block mr-1" /> : null}
-                                        {addingToList && addedItems.includes(ingredient.ingredient.id) ? 'Adding...' : 'Add to Shopping List'}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                        <div className="overflow-x-auto">
+                            <table className="w-full table-fixed border-collapse">
+                                <thead>
+                                    <tr className="text-left text-sm text-gray-500 border-b">
+                                        <th className="py-2 pr-4 font-medium">Ingredient</th>
+                                        <th className="py-2 px-4 font-medium text-center w-40">Amount</th>
+                                        <th className="py-2 pl-4 font-medium text-center w-60">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recipe.recipe_ingredients.map(ingredient => (
+                                        <tr key={ingredient.ingredient.id} className="border-b last:border-b-0">
+                                            <td className="py-3 pr-4 text-gray-700 wrap-break-word">{ingredient.ingredient.name}</td>
+                                            <td className="py-3 px-4 text-center whitespace-nowrap text-gray-700">{ingredient.quantity} {ingredient.unit}</td>
+                                            <td className="py-3 pl-4 text-center">
+                                                <button
+                                                    onClick={() => handleAddToShoppingList(ingredient)}
+                                                    className={`min-w-44 px-3 py-1 rounded-lg text-white focus:outline-hidden ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
+                                                        }`}
+                                                    disabled={addingToList}
+                                                >
+                                                    {addedItems.includes(ingredient.ingredient.id) ? <FaCheck className="inline-block mr-1" /> : null}
+                                                    {addingToList && addedItems.includes(ingredient.ingredient.id) ? 'Adding...' : 'Add to Shopping List'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     ) : (
                         <p className="text-gray-500">No ingredients found for this recipe.</p>
                     )}
