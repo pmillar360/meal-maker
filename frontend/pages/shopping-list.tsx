@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     getShoppingList,
     addShoppingListItem,
@@ -19,11 +19,7 @@ export default function ShoppingList() {
     const [addToFridge, setAddToFridge] = useState(true);
     const { addToast } = useToast();
 
-    useEffect(() => {
-        fetchShoppingList();
-    }, []);
-
-    const fetchShoppingList = async () => {
+    const fetchShoppingList = useCallback(async () => {
         setLoading(true);
         try {
             const data = await getShoppingList();
@@ -36,7 +32,11 @@ export default function ShoppingList() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [addToast]);
+
+    useEffect(() => {
+        fetchShoppingList();
+    }, [fetchShoppingList]);
 
     const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

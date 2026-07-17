@@ -20,9 +20,15 @@
     "@types/node": "^24.0.10",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "16.2.1",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.2.10",
     "postcss": "^8.5.10",
-    "tailwindcss": "^4.1.16"
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.64.0"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.11.1": true
   }
 }

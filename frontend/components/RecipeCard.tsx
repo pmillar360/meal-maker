@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { FiClock, FiUsers } from 'react-icons/fi';
 import { Recipe, RecipeAvailabilitySummary } from '../services/TypeService';
@@ -56,11 +57,14 @@ export default function RecipeCard({ recipe, favouriteRecipeIds = [], availabili
   return (
     <Link href={`/recipes/${recipe.id}`}>
       <div className="card hover:shadow-lg transition-shadow duration-300 cursor-pointer">
-        <div className="h-40 bg-gray-200">
-          <img
+        <div className="relative h-40 bg-gray-200">
+          <Image
             src={recipe.image_url}
             alt={recipe.title}
-            className="w-full h-full object-cover" />
+            fill
+            unoptimized
+            className="object-cover"
+          />
         </div>
         <div className="p-4">
           <div className='flex justify-between'>
