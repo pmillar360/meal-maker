@@ -7,11 +7,17 @@
       "request": "launch",
       "module": "uvicorn",
       "cwd": "${workspaceFolder}/backend",
-      "args": ["app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"],
-      "python": "${workspaceFolder}/backend/venv/Scripts/python.exe"
+      "args": [
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--log-level",
+        "debug"
+      ]
     },
-    
-{
+    {
       "name": "Launch via NPM",
       "request": "launch",
       "runtimeArgs": [
@@ -31,12 +37,16 @@
       "request": "launch",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}"
-    },
+    }
   ],
   "compounds": [
     {
       "name": "Full Stack Debug",
-      "configurations": ["FastAPI", "Next: Dev Server", "Next: Client"]
+      "configurations": [
+        "FastAPI",
+        "Launch via NPM",
+        "Next.js: client"
+      ]
     }
   ]
 }

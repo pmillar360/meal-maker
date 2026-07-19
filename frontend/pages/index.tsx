@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
-import { FridgeItem, Recipe, RecipeAvailabilitySummary } from '../services/TypeService';
+import { FridgeItem, Ingredient, Recipe, RecipeAvailabilitySummary } from '../services/TypeService';
 import {
   getFeaturedRecipes,
   getRecipeById,
@@ -9,16 +9,21 @@ import {
   getRecipesWithFridgeAvailability,
   getUserFavouriteRecipes,
 } from '../services/recipeService';
+import { getAllIngredients } from '../services/ingredientService';
+import { rankRecipeAvailability, RecipeRankingMode } from '../services/recipeRankingService';
 import RecipeCard from '../components/RecipeCard';
 import { useAuth } from '../context/AuthContext';
 import { addFridgeIngredient, deleteFridgeIngredient, getFridgeIngredients } from '../services/fridgeService';
+import IngredientMultiSelect from '../components/IngredientMultiSelect';
+
+const HOME_RANKING_MODE: RecipeRankingMode = 'balanced';
 
 export default function Home() {
   const { isLoggedIn } = useAuth();
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
   const [localFridgeItems, setLocalFridgeItems] = useState<string[]>([]);
-  const [fridgeInput, setFridgeInput] = useState('');
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [availabilityByRecipeId, setAvailabilityByRecipeId] = useState<Record<number, RecipeAvailabilitySummary>>({});
   const [favouriteRecipeIds, setFavouriteRecipeIds] = useState<number[]>([]);
@@ -28,6 +33,21 @@ export default function Home() {
   const activeFridgeNames = useMemo(
     () => (isLoggedIn ? fridgeItems.map((item) => item.name) : localFridgeItems),
     [isLoggedIn, fridgeItems, localFridgeItems]
+  );
+
+  const selectedFridgeIngredients = useMemo(
+    () =>
+      activeFridgeNames.map((name, index) => {
+        const matchedIngredient = ingredients.find(
+          (ingredient) => ingredient.name.toLowerCase() === name.toLowerCase()
+        );
+
+        return {
+          id: matchedIngredient?.id ?? -(index + 1),
+          name,
+        };
+      }),
+    [activeFridgeNames, ingredients]
   );
 
   const loadLoggedInMatches = async () => {
@@ -40,12 +60,7 @@ export default function Home() {
 
       setFridgeItems(fridgeData);
 
-      const sortedAvailability = [...availabilityData].sort((a, b) => {
-        if (a.missing_ingredients !== b.missing_ingredients) {
-          return a.missing_ingredients - b.missing_ingredients;
-        }
-        return b.available_ingredients - a.available_ingredients;
-      });
+      const sortedAvailability = rankRecipeAvailability(availabilityData, HOME_RANKING_MODE);
 
       const topMatches = sortedAvailability.slice(0, 9);
       const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
@@ -65,8 +80,12 @@ export default function Home() {
   useEffect(() => {
     const loadFeaturedRecipes = async () => {
       try {
-        const recipes = await getFeaturedRecipes(9);
+        const [recipes, allIngredients] = await Promise.all([
+          getFeaturedRecipes(9),
+          getAllIngredients(),
+        ]);
         setFeaturedRecipes(recipes);
+        setIngredients(allIngredients);
         setLoading(false);
       } catch (error) {
         if (axios.isAxiosError(error) && !error.response) {
@@ -129,8 +148,21 @@ export default function Home() {
           };
         });
 
-        setMatchedRecipes(validDetails);
-        setAvailabilityByRecipeId(nextAvailabilityMap);
+        const rankedSummaries = rankRecipeAvailability(
+          validDetails
+            .map((recipe) => nextAvailabilityMap[recipe.id])
+            .filter((summary): summary is RecipeAvailabilitySummary => Boolean(summary)),
+          HOME_RANKING_MODE
+        );
+
+        const sortedRecipes = rankedSummaries.map((summary) => summary.recipe);
+        const sortedAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
+        rankedSummaries.forEach((summary) => {
+          sortedAvailabilityMap[summary.recipe.id] = summary;
+        });
+
+        setMatchedRecipes(sortedRecipes);
+        setAvailabilityByRecipeId(sortedAvailabilityMap);
       } catch (error) {
         console.error('Failed to load local fridge matches:', error);
       } finally {
@@ -155,16 +187,25 @@ export default function Home() {
     }
   }, [isLoggedIn]);
 
-  const handleAddFridgeItem = async () => {
-    const nextIngredient = fridgeInput.trim();
-    if (!nextIngredient) {
+  const handleAddFridgeItems = async (items: Ingredient[]) => {
+    if (items.length === 0) {
+      return;
+    }
+
+    const activeNameSet = new Set(activeFridgeNames.map((name) => name.toLowerCase()));
+    const itemsToAdd = items
+      .map((item) => item.name.trim())
+      .filter((name) => Boolean(name) && !activeNameSet.has(name.toLowerCase()));
+
+    if (itemsToAdd.length === 0) {
       return;
     }
 
     if (isLoggedIn) {
       try {
-        await addFridgeIngredient({ name: nextIngredient, quantity: '' });
-        setFridgeInput('');
+        await Promise.all(
+          itemsToAdd.map((name) => addFridgeIngredient({ name, quantity: '' }))
+        );
         await loadLoggedInMatches();
       } catch (error) {
         console.error('Failed to add fridge ingredient:', error);
@@ -173,12 +214,12 @@ export default function Home() {
     }
 
     setLocalFridgeItems((prev) => {
-      if (prev.some((item) => item.toLowerCase() === nextIngredient.toLowerCase())) {
-        return prev;
-      }
-      return [...prev, nextIngredient];
+      const existingNames = new Set(prev.map((item) => item.toLowerCase()));
+      const nextItems = itemsToAdd.filter(
+        (name) => !existingNames.has(name.toLowerCase())
+      );
+      return [...prev, ...nextItems];
     });
-    setFridgeInput('');
   };
 
   const handleRemoveFridgeItem = async (value: number | string) => {
@@ -204,6 +245,22 @@ export default function Home() {
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <h1 className="text-4xl font-bold">Welcome to Meal Maker</h1>
           <p className="text-xl">Add your fridge ingredients and instantly find what you can cook</p>
+          <div className="mx-auto w-full max-w-3xl rounded-2xl border border-white/60 bg-white/95 p-5 text-left shadow-lg backdrop-blur-sm">
+            <label htmlFor="fridge-ingredients" className="mb-2 block text-base font-semibold text-primary-dark">
+              Start here: search and add ingredients from your fridge
+            </label>
+            <IngredientMultiSelect
+              options={ingredients}
+              selectedIngredients={selectedFridgeIngredients}
+              onChange={handleAddFridgeItems}
+              placeholder="Try eggs, spinach, onion..."
+              containerClassName="max-w-none"
+              inputClassName="text-base py-3"
+            />
+            <p className="mt-2 text-xs text-gray-600">
+              Select ingredients one by one. Each selection is added immediately to your fridge list below.
+            </p>
+          </div>
           <div className="flex justify-center space-x-4">
             <Link href="/recipes" className="btn bg-white text-primary hover:bg-gray-100">
               Browse Recipes
@@ -224,24 +281,6 @@ export default function Home() {
         </div>
 
         <div className="card p-5 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              type="text"
-              className="form-input grow"
-              value={fridgeInput}
-              onChange={(e) => setFridgeInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddFridgeItem();
-                }
-              }}
-              placeholder="Add an ingredient (e.g. eggs, spinach, onion)"
-            />
-            <button className="btn btn-primary" onClick={handleAddFridgeItem}>
-              Add Ingredient
-            </button>
-          </div>
 
           {!isLoggedIn && (
             <p className="text-sm text-gray-500">

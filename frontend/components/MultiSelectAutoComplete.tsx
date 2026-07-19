@@ -10,9 +10,19 @@ type Props = {
   options: Option[];
   selectedOptions: Option[];
   onChange?: (selected: Option[]) => void; // optional callback when selected changes
+  placeholder?: string;
+  containerClassName?: string;
+  inputClassName?: string;
 };
 
-export default function MultiSelectAutoComplete({ options, selectedOptions, onChange }: Props) {
+export default function MultiSelectAutoComplete({
+  options,
+  selectedOptions,
+  onChange,
+  placeholder = "Type to search...",
+  containerClassName,
+  inputClassName,
+}: Props) {
   const [input, setInput] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
@@ -59,22 +69,22 @@ export default function MultiSelectAutoComplete({ options, selectedOptions, onCh
   }, [highlightedIndex]);
 
   return (
-    <div className="max-w-md relative">
+    <div className={`relative w-full max-w-md ${containerClassName || ""}`.trim()}>
       {/* Input */}
       <input
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="border p-2 w-full rounded-md text-sm form-input"
-        placeholder="Type to search..."
+        className={`border p-2 w-full rounded-md text-sm text-gray-900 placeholder:text-gray-500 form-input ${inputClassName || ""}`.trim()}
+        placeholder={placeholder}
       />
 
       {/* Suggestions */}
       {input && filtered.length > 0 && (
         <ul
           ref={listRef}
-          className="border mt-1 bg-white max-h-40 overflow-y-auto absolute z-50 w-full"
+          className="border mt-1 bg-white text-gray-900 max-h-40 overflow-y-auto absolute z-50 w-full"
         >
           {filtered.map((opt, idx) => (
             <li

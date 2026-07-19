@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { FaFilter, FaTimes } from "react-icons/fa";
 import { Diet, Ingredient, MealType } from "../../services/TypeService";
 import { Recipe, RecipeAvailabilitySummary } from "../../services/TypeService";
-import MultiSelectAutoComplete, {
-  Option,
-} from "../../components/MultiSelectAutoComplete";
+import MultiSelectAutoComplete from "../../components/MultiSelectAutoComplete";
+import IngredientMultiSelect from "../../components/IngredientMultiSelect";
 import {
   getRecipes,
   getRecipesWithFridgeAvailability,
@@ -12,8 +11,11 @@ import {
   getAllDiets,
 } from "../../services/recipeService";
 import { getAllIngredients } from "../../services/ingredientService";
+import { rankRecipeAvailability, RecipeRankingMode } from "../../services/recipeRankingService";
 import RecipeCard from "../../components/RecipeCard";
 import { useAuth } from "../../context/AuthContext";
+
+const RECIPES_RANKING_MODE: RecipeRankingMode = "balanced";
 
 export default function Recipes() {
   const { isLoggedIn } = useAuth();
@@ -66,9 +68,10 @@ export default function Recipes() {
       try {
         if (isLoggedIn) {
           const availabilityData = await getRecipesWithFridgeAvailability(filters);
-          setRecipes(availabilityData.map((item) => item.recipe));
+          const rankedAvailabilityData = rankRecipeAvailability(availabilityData, RECIPES_RANKING_MODE);
+          setRecipes(rankedAvailabilityData.map((item) => item.recipe));
           const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
-          availabilityData.forEach((item) => {
+          rankedAvailabilityData.forEach((item) => {
             nextAvailabilityMap[item.recipe.id] = item;
           });
           setAvailabilityByRecipeId(nextAvailabilityMap);
@@ -91,15 +94,6 @@ export default function Recipes() {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleIngredientFilterChange = (e: Option[]) => {
-    const mappedIngredients = e.map((ingredient) => ({
-      id: ingredient.id,
-      name: ingredient.label,
-    }));
-
-    setFilters((prev) => ({ ...prev, ingredients: mappedIngredients }));
-  };
-
   const clearFilters = () => {
     setFilters({
       ingredients: [],
@@ -107,11 +101,6 @@ export default function Recipes() {
       diet: "",
     });
   };
-
-  const allIngredients: Option[] = ingredients.map((ingredient) => ({
-    id: ingredient.id,
-    label: ingredient.name,
-  }));
 
   const removeOption = (selectedOptionId: number) => {
     setFilters((prev) => ({
@@ -132,13 +121,12 @@ export default function Recipes() {
             <label htmlFor="ingredients" className="mr-2 text-sm font-medium">
               Ingredients:
             </label>
-            <MultiSelectAutoComplete
-              options={allIngredients}
-              selectedOptions={filters.ingredients.map((ingredient) => ({
-                id: ingredient.id,
-                label: ingredient.name,
-              }))}
-              onChange={handleIngredientFilterChange}
+            <IngredientMultiSelect
+              options={ingredients}
+              selectedIngredients={filters.ingredients}
+              onChange={(selected) =>
+                setFilters((prev) => ({ ...prev, ingredients: selected }))
+              }
             />
           </div>
 

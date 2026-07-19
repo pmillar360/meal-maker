@@ -25,6 +25,7 @@ export default function RecipeDetail() {
     const [addingToList, setAddingToList] = useState(false);
     const [addedItems, setAddedItems] = useState<number[]>([]);
     const [addingMissingIngredients, setAddingMissingIngredients] = useState(false);
+    const mealTypeNames = recipe?.meal_types?.map((mealType) => mealType.name).filter(Boolean) ?? [];
 
     useEffect(() => {
         if (!id) return;
@@ -144,7 +145,7 @@ export default function RecipeDetail() {
                         </div>
                         <div className="flex items-center text-gray-700">
                             <FaList className="h-5 w-5 mr-2" />
-                            <span>Meal Type: {recipe.meal_types?.map(x => x.name)}</span>
+                            <span>Meal Type: {mealTypeNames.length > 0 ? mealTypeNames.join(', ') : 'Not specified'}</span>
                         </div>
                     </div>
                     <div className="bg-white rounded-lg shadow-md p-6">
