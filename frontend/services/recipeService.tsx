@@ -14,14 +14,17 @@ interface FavouriteRecipeResponse {
   recipe_id: number;
 }
 
+type RecipeQueryFilters = {
+  ingredients?: Ingredient[];
+  mealTypes?: MealType[];
+  diet?: string;
+  search?: string;
+};
+
 export const getRecipes = async (
-    filters: {
-      ingredients?: Ingredient[];
-      mealTypes?: MealType[];
-      diet?: string;
-    } = {}
+    filters: RecipeQueryFilters = {}
   ): Promise<Recipe[]> => {
-    const { ingredients, mealTypes: mealType, diet } = filters;
+    const { ingredients, mealTypes: mealType, diet, search } = filters;
     let queryParams = new URLSearchParams();
     if (ingredients && ingredients.length > 0)
       queryParams.append(
@@ -34,18 +37,15 @@ export const getRecipes = async (
         mealType.map((x) => x.name).toString()
       );
     if (diet) queryParams.append("diet", diet);
+    if (search && search.trim()) queryParams.append("search", search.trim());
     const response = await api.get<Recipe[]>(`/recipes/?${queryParams}`);
     return response.data;
   };
 
 export const getRecipesWithFridgeAvailability = async (
-  filters: {
-    ingredients?: Ingredient[];
-    mealTypes?: MealType[];
-    diet?: string;
-  } = {}
+  filters: RecipeQueryFilters = {}
 ): Promise<RecipeAvailabilitySummary[]> => {
-  const { ingredients, mealTypes: mealType, diet } = filters;
+  const { ingredients, mealTypes: mealType, diet, search } = filters;
   const queryParams = new URLSearchParams();
 
   if (ingredients && ingredients.length > 0) {
@@ -64,6 +64,10 @@ export const getRecipesWithFridgeAvailability = async (
 
   if (diet) {
     queryParams.append("diet", diet);
+  }
+
+  if (search && search.trim()) {
+    queryParams.append("search", search.trim());
   }
 
   const response = await api.get<RecipeAvailabilitySummary[]>(

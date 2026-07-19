@@ -73,6 +73,7 @@ def get_recipes(
     ingredients: List[str] = [], 
     meal_types: Optional[List[str]] = None, 
     diet: Optional[str] = None,
+    search: Optional[str] = None,
     skip: int = 0, 
     limit: int = 100
 ):
@@ -93,6 +94,10 @@ def get_recipes(
         diet_obj = db.query(models.Diet).filter(models.Diet.name == diet).first()
         if diet_obj:
             query = query.filter(models.Recipe.diets.contains(diet_obj))
+
+    # Apply recipe title search filter
+    if search and search.strip():
+        query = query.filter(models.Recipe.title.ilike(f"%{search.strip()}%"))
     
     # Apply ingredient filter if ingredients are provided
     if ingredients:
@@ -187,11 +192,12 @@ def get_recipes_with_fridge_availability(
     ingredients: List[str] = [],
     meal_types: Optional[List[str]] = None,
     diet: Optional[str] = None,
+    search: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
 ):
     fridge_name_set = _get_user_fridge_name_set(db, user_id)
-    recipe_list = get_recipes(db, ingredients, meal_types, diet, skip, limit)
+    recipe_list = get_recipes(db, ingredients, meal_types, diet, search, skip, limit)
 
     availability_summaries = []
 

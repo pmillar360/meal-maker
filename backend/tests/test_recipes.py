@@ -2,9 +2,15 @@ from fastapi import status
 from app import models
 
 
-def _create_recipe_with_ingredients(db_session, test_user, ingredient_names: list[str], meal_type=None):
+def _create_recipe_with_ingredients(
+    db_session,
+    test_user,
+    ingredient_names: list[str],
+    meal_type=None,
+    title: str = "Availability Test Recipe",
+):
     recipe = models.Recipe(
-        title="Availability Test Recipe",
+        title=title,
         description="A recipe for availability endpoint tests",
         instructions="Mix and cook",
         cooking_time=15,
@@ -15,9 +21,15 @@ def _create_recipe_with_ingredients(db_session, test_user, ingredient_names: lis
     db_session.flush()
 
     for ingredient_name in ingredient_names:
-        ingredient = models.Ingredient(name=ingredient_name, category="Produce")
-        db_session.add(ingredient)
-        db_session.flush()
+        ingredient = (
+            db_session.query(models.Ingredient)
+            .filter(models.Ingredient.name == ingredient_name)
+            .first()
+        )
+        if ingredient is None:
+            ingredient = models.Ingredient(name=ingredient_name, category="Produce")
+            db_session.add(ingredient)
+            db_session.flush()
 
         recipe_ingredient = models.RecipeIngredient(
             recipe_id=recipe.id,
@@ -85,6 +97,88 @@ def test_get_recipes_with_fridge_availability(authenticated_client, db_session, 
     assert recipe_availability["available_ingredients"] == 1
     assert recipe_availability["missing_ingredients"] == 1
     assert recipe_availability["missing_ingredient_names"] == ["Garlic"]
+
+
+def test_get_recipes_filters_by_search_query(client, db_session, test_user):
+    matching_recipe = _create_recipe_with_ingredients(
+        db_session,
+        test_user,
+        ["Chicken", "Rice"],
+        title="Spicy Chicken Bowl",
+    )
+    _create_recipe_with_ingredients(
+        db_session,
+        test_user,
+        ["Tomato", "Basil"],
+        title="Tomato Pasta",
+    )
+
+    response = client.get("/recipes/", params={"search": "chicken"})
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert [recipe["id"] for recipe in data] == [matching_recipe.id]
+    assert data[0]["title"] == "Spicy Chicken Bowl"
+
+
+def test_get_recipes_with_fridge_availability_filters_by_selected_ingredients(
+    authenticated_client,
+    db_session,
+    test_user,
+):
+    matching_recipe = _create_recipe_with_ingredients(
+        db_session,
+        test_user,
+        ["Onion", "Garlic"],
+        title="Savory Onion Skillet",
+    )
+    _create_recipe_with_ingredients(
+        db_session,
+        test_user,
+        ["Tomato", "Basil"],
+        title="Tomato Basil Soup",
+    )
+
+    authenticated_client.post("/fridge/", json={"name": "onion", "quantity": "1"})
+    response = authenticated_client.get(
+        "/recipes/with-fridge-availability/",
+        params={"ingredients": "onion"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert [item["recipe"]["id"] for item in data] == [matching_recipe.id]
+    assert data[0]["available_ingredients"] == 1
+    assert data[0]["missing_ingredients"] == 1
+
+
+def test_get_recipes_with_fridge_availability_combines_search_and_ingredient_filters(
+    authenticated_client,
+    db_session,
+    test_user,
+):
+    matching_recipe = _create_recipe_with_ingredients(
+        db_session,
+        test_user,
+        ["Onion", "Garlic"],
+        title="Onion Chicken Bake",
+    )
+    _create_recipe_with_ingredients(
+        db_session,
+        test_user,
+        ["Onion", "Pepper"],
+        title="Onion Veggie Bake",
+    )
+
+    response = authenticated_client.get(
+        "/recipes/with-fridge-availability/",
+        params={"ingredients": "onion", "search": "chicken"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert [item["recipe"]["id"] for item in data] == [matching_recipe.id]
+    assert data[0]["recipe"]["title"] == "Onion Chicken Bake"
 
 
 def test_get_recipe_availability(authenticated_client, db_session, test_user):

@@ -17,6 +17,7 @@ import { addFridgeIngredient, deleteFridgeIngredient, getFridgeIngredients } fro
 import IngredientMultiSelect from '../components/IngredientMultiSelect';
 
 const HOME_RANKING_MODE: RecipeRankingMode = 'balanced';
+const GUEST_FRIDGE_STORAGE_KEY = 'meal-maker-local-fridge-items';
 
 export default function Home() {
   const { isLoggedIn } = useAuth();
@@ -187,6 +188,14 @@ export default function Home() {
     }
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    if (isLoggedIn) {
+      return;
+    }
+
+    localStorage.setItem(GUEST_FRIDGE_STORAGE_KEY, JSON.stringify(localFridgeItems));
+  }, [isLoggedIn, localFridgeItems]);
+
   const handleAddFridgeItems = async (items: Ingredient[]) => {
     if (items.length === 0) {
       return;
@@ -275,7 +284,7 @@ export default function Home() {
       <section className="py-2">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold">What Can I Cook Right Now?</h2>
-          <Link href="/recipes" className="text-primary hover:text-primary-dark">
+          <Link href="/recipes?applyFridge=1" className="text-primary hover:text-primary-dark">
             Explore all recipes →
           </Link>
         </div>

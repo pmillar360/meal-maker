@@ -36,6 +36,7 @@ def get_recipes(
         description="Comma separated list of meal types (breakfast, lunch, dinner, snack)",
     ),
     diet: Optional[str] = Query(None, description="Dietary restriction (vegetarian, vegan, etc)"),
+    search: Optional[str] = Query(None, description="Recipe title search query"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -43,7 +44,7 @@ def get_recipes(
     """Get recipes with optional filtering by ingredients, meal type, and dietary restrictions"""
     ingredient_list = ingredients.split(",") if ingredients else []
     meal_type_list = meal_types.split(",") if meal_types else []
-    return recipes.get_recipes(db, ingredient_list, meal_type_list, diet, skip, limit)
+    return recipes.get_recipes(db, ingredient_list, meal_type_list, diet, search, skip, limit)
 
 
 @router.get("/recipes/with-fridge-availability/", response_model=List[schemas.RecipeAvailabilitySummary])
@@ -54,6 +55,7 @@ def get_recipes_with_fridge_availability(
         description="Comma separated list of meal types (breakfast, lunch, dinner, snack)",
     ),
     diet: Optional[str] = Query(None, description="Dietary restriction (vegetarian, vegan, etc)"),
+    search: Optional[str] = Query(None, description="Recipe title search query"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -61,7 +63,7 @@ def get_recipes_with_fridge_availability(
 ):
     ingredient_list = ingredients.split(",") if ingredients else []
     meal_type_list = meal_types.split(",") if meal_types else []
-    return recipes.get_recipes_with_fridge_availability(db, user.id, ingredient_list, meal_type_list, diet, skip, limit)
+    return recipes.get_recipes_with_fridge_availability(db, user.id, ingredient_list, meal_type_list, diet, search, skip, limit)
 
 
 @router.get("/recipes/{recipe_id}", response_model=schemas.RecipeDetail)
