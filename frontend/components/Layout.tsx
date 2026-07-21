@@ -42,7 +42,7 @@ export default function Layout({ children }: LayoutProps) {
                 >
                   Recipes
                 </Link>
-                <Link
+                {/* <Link
                   href="/ingredients"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 ${
                     router.pathname.startsWith('/ingredients')
@@ -51,7 +51,7 @@ export default function Layout({ children }: LayoutProps) {
                   }`}
                   >
                     Ingredients
-                </Link>
+                </Link> */}
                 {isLoggedIn && (
                   <>
                     <Link
