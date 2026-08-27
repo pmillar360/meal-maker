@@ -36,17 +36,16 @@ Implementation flow is organized as route handlers in the backend app layer, dat
 ### Prerequisites
 
 - Node.js 14+
-- Python 3.8+
+- Python 3.13+
+- uv (Python package/project manager)
 - PostgreSQL for full local parity, or SQLite for lightweight development
 
 ### Backend Setup
 
 ```bash
 cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+uv sync
+uv run uvicorn app.main:app --reload
 ```
 
 ### Frontend Setup

@@ -1,6 +1,7 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { FiClock, FiUsers } from 'react-icons/fi';
-import { Recipe } from '../services/TypeService';
+import { Recipe, RecipeAvailabilitySummary } from '../services/TypeService';
 import React, { useState, useEffect } from 'react';
 import { FaHeart } from 'react-icons/fa';
 import { addUserFavouriteRecipe, removeUserFavouriteRecipe } from '../services/recipeService';
@@ -11,9 +12,10 @@ import { toastCopy } from '../services/toastCopy';
 interface RecipeCardProps {
   recipe: Recipe;
   favouriteRecipeIds?: number[];
+  availability?: Pick<RecipeAvailabilitySummary, 'total_ingredients' | 'available_ingredients' | 'missing_ingredients'>;
 }
 
-export default function RecipeCard({ recipe, favouriteRecipeIds = [] }: RecipeCardProps) {
+export default function RecipeCard({ recipe, favouriteRecipeIds = [], availability }: RecipeCardProps) {
   const { isLoggedIn } = useAuth();
   const { addToast } = useToast();
   const [isFavourite, setIsFavourite] = useState(recipe.isFavourite || favouriteRecipeIds.includes(recipe.id));
@@ -55,11 +57,14 @@ export default function RecipeCard({ recipe, favouriteRecipeIds = [] }: RecipeCa
   return (
     <Link href={`/recipes/${recipe.id}`}>
       <div className="card hover:shadow-lg transition-shadow duration-300 cursor-pointer">
-        <div className="h-40 bg-gray-200">
-          <img
+        <div className="relative h-40 bg-gray-200">
+          <Image
             src={recipe.image_url}
             alt={recipe.title}
-            className="w-full h-full object-cover" />
+            fill
+            unoptimized
+            className="object-cover"
+          />
         </div>
         <div className="p-4">
           <div className='flex justify-between'>
@@ -96,6 +101,19 @@ export default function RecipeCard({ recipe, favouriteRecipeIds = [] }: RecipeCa
             )}
           </div>
         )}
+        {availability && (
+          <div className="mb-3">
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                availability.missing_ingredients === 0
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {availability.available_ingredients}/{availability.total_ingredients} ingredients available
+            </span>
+          </div>
+        )}
         <div className="mt-3">
           {recipe.meal_types && recipe.meal_types?.map(mealType => (
             <span
@@ -124,8 +142,4 @@ export default function RecipeCard({ recipe, favouriteRecipeIds = [] }: RecipeCa
         </div> */}
       </div>
     </div>    </Link>  );
-}
-
-function userToast() {
-  throw new Error('Function not implemented.');
 }

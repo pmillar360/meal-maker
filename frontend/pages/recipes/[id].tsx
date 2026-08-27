@@ -2,32 +2,51 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { addShoppingListItem } from '../../services/ShoppingListService';
-import { RecipeIngredient } from '../../services/TypeService';
+import { RecipeIngredient, RecipeIngredientAvailability } from '../../services/TypeService';
 import { Recipe } from '../../services/TypeService';
 import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaUtensils, FaList, FaCheck } from 'react-icons/fa';
-import { getRecipeById } from '../../services/recipeService';
+import { addMissingIngredientsToShoppingList, getRecipeAvailabilityById, getRecipeById } from '../../services/recipeService';
 import { useToast } from '../../context/ToastContext';
 import { toastCopy } from '../../services/toastCopy';
+import { useAuth } from '../../context/AuthContext';
 
 export default function RecipeDetail() {
     const router = useRouter();
     const { id } = router.query as { id?: string };
     const { addToast } = useToast();
+    const { isLoggedIn } = useAuth();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
+    const [ingredientStatuses, setIngredientStatuses] = useState<Record<number, RecipeIngredientAvailability>>({});
+    const [missingIngredientCount, setMissingIngredientCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [addingToList, setAddingToList] = useState(false);
     const [addedItems, setAddedItems] = useState<number[]>([]);
+    const [addingMissingIngredients, setAddingMissingIngredients] = useState(false);
+    const mealTypeNames = recipe?.meal_types?.map((mealType) => mealType.name).filter(Boolean) ?? [];
 
     useEffect(() => {
         if (!id) return;
         const fetchRecipe = async () => {
             setLoading(true);
             try {
-                const data = await getRecipeById(id);
-                setRecipe(data);
+                if (isLoggedIn) {
+                    const availability = await getRecipeAvailabilityById(id);
+                    setRecipe(availability.recipe);
+                    setMissingIngredientCount(availability.missing_ingredients);
+                    const nextStatuses: Record<number, RecipeIngredientAvailability> = {};
+                    availability.ingredient_statuses.forEach((status) => {
+                        nextStatuses[status.ingredient.id] = status;
+                    });
+                    setIngredientStatuses(nextStatuses);
+                } else {
+                    const data = await getRecipeById(id);
+                    setRecipe(data);
+                    setMissingIngredientCount(0);
+                    setIngredientStatuses({});
+                }
                 setError(null);
             } catch (err) {
                 console.error("Error fetching recipe:", err);
@@ -37,7 +56,7 @@ export default function RecipeDetail() {
             }
         };
         fetchRecipe();
-    }, [id]);
+    }, [id, isLoggedIn]);
 
     const handleAddToShoppingList = async (ingredient: RecipeIngredient) => {
         if (addedItems.includes(ingredient.ingredient.id)) return;
@@ -51,6 +70,36 @@ export default function RecipeDetail() {
             addToast(toastCopy.shoppingList.addFailed(ingredient.ingredient.name), 'error');
         } finally {
             setAddingToList(false);
+        }
+    };
+
+    const handleAddMissingIngredients = async () => {
+        if (!id || !isLoggedIn) {
+            return;
+        }
+
+        setAddingMissingIngredients(true);
+        try {
+            const result = await addMissingIngredientsToShoppingList(id);
+            if (result.created_count === 0) {
+                addToast('No missing ingredients to add.', 'success');
+            } else {
+                addToast(`Added ${result.created_count} missing ingredient(s) to your shopping list.`, 'success');
+                setAddedItems((prev) => [
+                    ...new Set([
+                        ...prev,
+                        ...result.created_items
+                            .map((item) => recipe?.recipe_ingredients?.find((ri) => ri.ingredient.name === item.name)?.ingredient.id)
+                            .filter((value): value is number => typeof value === 'number'),
+                    ]),
+                ]);
+                setMissingIngredientCount((prev) => Math.max(0, prev - result.created_count));
+            }
+        } catch (err) {
+            console.error('Error adding missing ingredients:', err);
+            addToast('Failed to add missing ingredients to shopping list.', 'error');
+        } finally {
+            setAddingMissingIngredients(false);
         }
     };
 
@@ -71,9 +120,14 @@ export default function RecipeDetail() {
         <div>
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <div className="flex items-center mb-4">
-                    <Link href="/recipes" className="text-gray-500 hover:text-gray-700">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="text-gray-500 hover:text-gray-700"
+                        aria-label="Go back"
+                    >
                         <FaArrowLeft className="h-5 w-5" />
-                    </Link>
+                    </button>
                     <h1 className="text-3xl font-bold ml-4">{recipe.title}</h1>
                 </div>
                 <div className="relative h-56 w-full overflow-hidden rounded-lg">
@@ -96,7 +150,7 @@ export default function RecipeDetail() {
                         </div>
                         <div className="flex items-center text-gray-700">
                             <FaList className="h-5 w-5 mr-2" />
-                            <span>Meal Type: {recipe.meal_types?.map(x => x.name)}</span>
+                            <span>Meal Type: {mealTypeNames.length > 0 ? mealTypeNames.join(', ') : 'Not specified'}</span>
                         </div>
                     </div>
                     <div className="bg-white rounded-lg shadow-md p-6">
@@ -113,7 +167,20 @@ export default function RecipeDetail() {
                     </div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                    <h2 className="text-xl font-semibold mb-4">Ingredients</h2>
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 className="text-xl font-semibold">Ingredients</h2>
+                        {isLoggedIn ? (
+                            <button
+                                onClick={handleAddMissingIngredients}
+                                disabled={addingMissingIngredients || missingIngredientCount === 0}
+                                className="btn btn-primary disabled:opacity-50"
+                            >
+                                {addingMissingIngredients ? 'Adding Missing Ingredients...' : 'Add All Missing to Shopping List'}
+                            </button>
+                        ) : (
+                            <p className="text-sm text-gray-500">Log in to see availability and add all missing ingredients.</p>
+                        )}
+                    </div>
                     {recipe.recipe_ingredients && recipe.recipe_ingredients.length > 0 ? (
                         <div className="overflow-x-auto">
                             <table className="w-full table-fixed border-collapse">
@@ -121,6 +188,7 @@ export default function RecipeDetail() {
                                     <tr className="text-left text-sm text-gray-500 border-b">
                                         <th className="py-2 pr-4 font-medium">Ingredient</th>
                                         <th className="py-2 px-4 font-medium text-center w-40">Amount</th>
+                                        <th className="py-2 px-4 font-medium text-center w-40">Status</th>
                                         <th className="py-2 pl-4 font-medium text-center w-60">Action</th>
                                     </tr>
                                 </thead>
@@ -129,6 +197,17 @@ export default function RecipeDetail() {
                                         <tr key={ingredient.ingredient.id} className="border-b last:border-b-0">
                                             <td className="py-3 pr-4 text-gray-700 wrap-break-word">{ingredient.ingredient.name}</td>
                                             <td className="py-3 px-4 text-center whitespace-nowrap text-gray-700">{ingredient.quantity} {ingredient.unit}</td>
+                                            <td className="py-3 px-4 text-center whitespace-nowrap">
+                                                {isLoggedIn && ingredientStatuses[ingredient.ingredient.id] ? (
+                                                    ingredientStatuses[ingredient.ingredient.id].has_in_fridge ? (
+                                                        <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">In Fridge</span>
+                                                    ) : (
+                                                        <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Missing</span>
+                                                    )
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">-</span>
+                                                )}
+                                            </td>
                                             <td className="py-3 pl-4 text-center">
                                                 <button
                                                     onClick={() => handleAddToShoppingList(ingredient)}

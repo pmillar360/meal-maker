@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaTimes } from 'react-icons/fa';
 
 interface AlertProps {
@@ -48,6 +48,11 @@ export default function Alert({
   const [visible, setVisible] = useState(true);
   const { icon: Icon, bgColor, textColor, iconColor } = VARIANTS[variant] || VARIANTS.info;
 
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    if (onClose) onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (autoClose && visible) {
       const timer = setTimeout(() => {
@@ -55,12 +60,7 @@ export default function Alert({
       }, autoCloseTime);
       return () => clearTimeout(timer);
     }
-  }, [autoClose, autoCloseTime, visible]);
-
-  const handleClose = () => {
-    setVisible(false);
-    if (onClose) onClose();
-  };
+  }, [autoClose, autoCloseTime, handleClose, visible]);
 
   if (!visible) return null;
 
