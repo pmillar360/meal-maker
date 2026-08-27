@@ -120,9 +120,14 @@ export default function RecipeDetail() {
         <div>
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <div className="flex items-center mb-4">
-                    <Link href="/recipes" className="text-gray-500 hover:text-gray-700">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="text-gray-500 hover:text-gray-700"
+                        aria-label="Go back"
+                    >
                         <FaArrowLeft className="h-5 w-5" />
-                    </Link>
+                    </button>
                     <h1 className="text-3xl font-bold ml-4">{recipe.title}</h1>
                 </div>
                 <div className="relative h-56 w-full overflow-hidden rounded-lg">

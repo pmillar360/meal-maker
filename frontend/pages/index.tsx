@@ -342,7 +342,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-8">
+      {/* <section className="py-8">
         <h2 className="text-2xl font-bold text-center mb-8">How It Works</h2>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="card p-6 text-center">
@@ -361,7 +361,7 @@ export default function Home() {
             <p className="text-gray-600">Add missing ingredients to your shopping list</p>
           </div>
         </div>
-      </section>
+      </section> */}
       {/* Featured Recipes Section */}
       <section className="py-8">
         <div className="flex justify-between items-center mb-6">
