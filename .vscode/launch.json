@@ -19,14 +19,13 @@
       ]
     },
     {
-      "name": "Launch via NPM",
+      "name": "Next.js: server (pnpm)",
       "request": "launch",
       "runtimeArgs": [
-        "run-script",
         "dev"
       ],
       "cwd": "${workspaceFolder}/frontend",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "pnpm",
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -37,7 +36,7 @@
       "type": "editor-browser",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}"
+      "webRoot": "${workspaceFolder}/frontend"
     }
   ],
   "compounds": [
@@ -45,7 +44,7 @@
       "name": "Full Stack Debug",
       "configurations": [
         "FastAPI",
-        "Launch via NPM",
+        "Next.js: server (pnpm)",
         "Next.js: client"
       ]
     }

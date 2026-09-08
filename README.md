@@ -52,8 +52,8 @@ uv run uvicorn app.main:app --reload
 
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ### Docker Setup
@@ -91,18 +91,27 @@ python -m pytest backend
 
 ### Frontend validation
 
-There is currently no dedicated frontend test suite configured, so the recommended validation step is a production build:
+Run the frontend workflow test suite:
 
 ```bash
 cd frontend
-npm run build
+pnpm test
+```
+
+The tests use Vitest and React Testing Library with mocked API services. They cover guest ingredient matching, recipe filters, recipe details and missing ingredients, and shopping-list management.
+
+Then run a production build:
+
+```bash
+cd frontend
+pnpm build
 ```
 
 Optional lint step:
 
 ```bash
 cd frontend
-npm run lint
+pnpm lint
 ```
 
 ### Manual MVP check
