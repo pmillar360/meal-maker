@@ -69,6 +69,54 @@ jobs:
       - name: Run frontend tests
         run: pnpm test
 
+  e2e-tests:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.12.6"
+          enable-cache: true
+
+      - name: Sync backend dependencies
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: "12.3.4"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        working-directory: frontend
+        run: pnpm test:e2e
+
   backend-smoke:
     name: Backend smoke check
     runs-on: ubuntu-latest

@@ -107,6 +107,16 @@ cd frontend
 pnpm build
 ```
 
+Run the browser end-to-end suite against isolated local frontend, backend, and SQLite instances:
+
+```bash
+cd frontend
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+The E2E suite creates `backend/e2e_test.db`; the file is ignored by Git and recreated for each run.
+
 Optional lint step:
 
 ```bash

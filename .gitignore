@@ -44,6 +44,8 @@ Thumbs.db
 
 /frontend/node_modules
 /frontend/.next
+/frontend/playwright-report
+/frontend/test-results
 
 /backend/.coverage
 .coverage
@@ -52,3 +54,4 @@ Thumbs.db
 .notes/
 .github/copilot-instructions.md
 /frontend/next-env.d.ts
+CLAUDE.md
