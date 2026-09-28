@@ -157,6 +157,26 @@ export default function Recipes() {
     [fridgeIngredientNames]
   );
 
+  const visibleRecipes = useMemo(() => {
+    if (!applyFridgeIngredients) return recipes;
+
+    if (isLoggedIn) {
+      return fridgeIngredientNames.length > 0
+        ? recipes.filter((recipe) => availabilityByRecipeId[recipe.id]?.available_ingredients > 0)
+        : recipes;
+    }
+
+    return normalizedFridgeIngredientNames.size > 0
+      ? recipes.filter((recipe) =>
+          (recipe.recipe_ingredients || []).some((recipeIngredient) =>
+            normalizedFridgeIngredientNames.has(
+              recipeIngredient.ingredient.name.trim().toLowerCase()
+            )
+          )
+        )
+      : recipes;
+  }, [recipes, availabilityByRecipeId, isLoggedIn, applyFridgeIngredients, fridgeIngredientNames.length, normalizedFridgeIngredientNames]);
+
   const queryFilters = useMemo(
     () => ({
       ingredients: selectedIngredientFilters,
@@ -185,14 +205,9 @@ export default function Recipes() {
             nameFilteredAvailabilityData,
             RECIPES_RANKING_MODE
           );
-          const fridgeFilteredAvailabilityData =
-            applyFridgeIngredients && fridgeIngredientNames.length > 0
-              ? rankedAvailabilityData.filter((item) => item.available_ingredients > 0)
-              : rankedAvailabilityData;
-
-          setRecipes(fridgeFilteredAvailabilityData.map((item) => item.recipe));
+          setRecipes(rankedAvailabilityData.map((item) => item.recipe));
           const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
-          fridgeFilteredAvailabilityData.forEach((item) => {
+          rankedAvailabilityData.forEach((item) => {
             nextAvailabilityMap[item.recipe.id] = item;
           });
           setAvailabilityByRecipeId(nextAvailabilityMap);
@@ -204,18 +219,7 @@ export default function Recipes() {
               )
             : recipesData;
 
-          const fridgeFilteredRecipes =
-            applyFridgeIngredients && normalizedFridgeIngredientNames.size > 0
-              ? nameFilteredRecipes.filter((recipe) =>
-                  (recipe.recipe_ingredients || []).some((recipeIngredient) =>
-                    normalizedFridgeIngredientNames.has(
-                      recipeIngredient.ingredient.name.trim().toLowerCase()
-                    )
-                  )
-                )
-              : nameFilteredRecipes;
-
-          setRecipes(fridgeFilteredRecipes);
+          setRecipes(nameFilteredRecipes);
           setAvailabilityByRecipeId({});
         }
       } catch (error) {
@@ -225,14 +229,7 @@ export default function Recipes() {
       }
     };
     fetchRecipesData();
-  }, [
-    queryFilters,
-    isLoggedIn,
-    applyFridgeIngredients,
-    fridgeIngredientNames.length,
-    normalizedFridgeIngredientNames,
-    normalizedSearch,
-  ]);
+  }, [queryFilters, isLoggedIn, normalizedSearch]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -437,12 +434,12 @@ export default function Recipes() {
           <div className="col-span-full text-center py-10">
             <p className="text-lg text-gray-500">Loading recipes...</p>
           </div>
-        ) : recipes.length === 0 ? (
+        ) : visibleRecipes.length === 0 ? (
           <div className="col-span-full text-center py-10">
             <p className="text-lg text-gray-500">No recipes found.</p>
           </div>
         ) : (
-          recipes.map((recipe) => (
+          visibleRecipes.map((recipe) => (
             <RecipeCard
               key={recipe.id}
               recipe={recipe}

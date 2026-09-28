@@ -75,19 +75,50 @@ def get_random_recipes(number=3):
     return response.json()
 
 # Calling this endpoint requires 1 point and 0.01 points per recipe returned
-def get_recipes_by_ingredients(ingredients, number=10):
+def get_recipes_by_ingredients(ingredients, number=10, ingredient_option=1, ignore_pantry=True):
     REQ_URL = BASE_URL + "/recipes/findByIngredients"
 
     params = {
         "apiKey": SPOONACULAR_API_KEY,
         "ingredients": ",".join(ingredients),
         "number": number,
-        "ranking": 1,  # 1 = maximize used ingredients, 2 = minimize missing ingredients
-        "ignorePantry": True, # ignore common pantry items like water, salt, flour TODO test the difference and maybe make it an option
+        "ranking": ingredient_option,  # 1 = maximize used ingredients, 2 = minimize missing ingredients TODO Maybe this should also be an option for the user, either in user preferences or on the search page
+        "ignorePantry": ignore_pantry, # ignore common pantry items like water, salt, flour TODO test the difference and maybe make it an option
     }
 
     log(f"Fetching Spoonacular recipes by ingredients: {ingredients}", level=20)
     response = requests.get(REQ_URL, params=params)
+    response.raise_for_status()
+
+    return response.json()
+
+# Calling this endpoint requires 1 point
+def get_recipe_instructions(spoonacular_id: int):
+    RECIPE_URL = BASE_URL + f"/recipes/{spoonacular_id}/analyzedInstructions"
+
+    params = {
+        "apiKey": SPOONACULAR_API_KEY,
+    }
+
+    log(f"Fetching Spoonacular recipe instructions by ID: {spoonacular_id}", level=20)
+    
+    response = requests.get(RECIPE_URL, params=params)
+    response.raise_for_status()
+
+    return response.json()
+
+# Calling this endpoint requires 1 point
+def analyze_recipe_instructions(recipe_id: int, instructions: str):
+    RECIPE_URL = BASE_URL + f"/recipes/analyzeInstructions"
+
+    params = {
+        "apiKey": SPOONACULAR_API_KEY,
+        "instructions": instructions,
+    }
+
+    log(f"Analyzing recipe instructions using Spoonacular for recipe ID: {recipe_id}", level=20)
+
+    response = requests.post(RECIPE_URL, params=params, json={"id": recipe_id, "instructions": instructions})
     response.raise_for_status()
 
     return response.json()

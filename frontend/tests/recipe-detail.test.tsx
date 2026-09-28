@@ -60,6 +60,7 @@ describe('recipe detail workflow', () => {
     expect(screen.getByText('Meal Type: Dinner')).toBeInTheDocument();
     expect(screen.getByText('vegetarian')).toBeInTheDocument();
     expect(screen.getByText('Boil the pasta.')).toBeInTheDocument();
+    expect(screen.getByText('Stir through the tomato sauce.')).toBeInTheDocument();
     expect(screen.getByText('In Fridge')).toBeInTheDocument();
     expect(screen.getByText('Missing')).toBeInTheDocument();
 

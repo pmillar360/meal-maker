@@ -6,7 +6,7 @@ export interface Recipe {
   meal_types?: MealType[]; // TODO Should these be optional? what difference does it make?
   diets?: Diet[]
   image_url: string;
-  instructions: string;
+  instructions: string | null;
   instructionSteps: string[];
   recipe_ingredients: RecipeIngredient[];
   description: string;

@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "FastAPI",
+      "name": "FastAPI Backend",
       "type": "debugpy",
       "request": "launch",
       "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
@@ -43,7 +43,7 @@
     {
       "name": "Full Stack Debug",
       "configurations": [
-        "FastAPI",
+        "FastAPI Backend",
         "Next.js: server (pnpm)",
         "Next.js: client"
       ]

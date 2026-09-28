@@ -9,6 +9,8 @@ load_dotenv()
 # For development, we'll use SQLite instead of PostgreSQL to simplify setup
 # In production, replace with PostgreSQL connection string
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./meal_maker.db")
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}

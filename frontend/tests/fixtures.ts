@@ -11,7 +11,7 @@ export const tomatoPasta: Recipe = {
   meal_types: [{ id: 1, name: 'Dinner' }],
   diets: [{ id: 1, name: 'vegetarian' }],
   image_url: '/tomato-pasta.jpg',
-  instructions: ['Boil the pasta.', 'Stir through the tomato sauce.'] as unknown as string,
+  instructions: 'Boil the pasta.\nStir through the tomato sauce.',
   instructionSteps: [],
   recipe_ingredients: [
     { ingredient: tomato, quantity: '2', unit: 'whole' },

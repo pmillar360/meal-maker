@@ -40,6 +40,23 @@ describe('recipe discovery workflow', () => {
     mocks.getRecipes.mockResolvedValue([tomatoPasta]);
   });
 
+  it('fetches recipes once on load and does not refetch when applying local fridge ingredients', async () => {
+    localStorage.setItem('meal-maker-local-fridge-items', JSON.stringify(['Onion']));
+    const user = userEvent.setup();
+    render(<Recipes />);
+
+    expect(await screen.findByRole('heading', { name: 'Tomato Pasta' })).toBeInTheDocument();
+    await waitFor(() => expect(mocks.getRecipes).toHaveBeenCalledTimes(1));
+
+    await user.click(screen.getByRole('checkbox', { name: 'Apply fridge ingredients' }));
+    expect(screen.getByText('No recipes found.')).toBeInTheDocument();
+    expect(mocks.getRecipes).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Apply fridge ingredients' }));
+    expect(screen.getByRole('heading', { name: 'Tomato Pasta' })).toBeInTheDocument();
+    expect(mocks.getRecipes).toHaveBeenCalledTimes(1);
+  });
+
   it('loads recipes and applies meal type and diet filters', async () => {
     const user = userEvent.setup();
     render(<Recipes />);

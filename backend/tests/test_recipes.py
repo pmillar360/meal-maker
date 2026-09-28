@@ -1,3 +1,6 @@
+import datetime
+from unittest.mock import patch
+
 from fastapi import status
 from app import models
 
@@ -56,6 +59,94 @@ def test_get_recipe_by_id(client, test_recipe):
     assert data["title"] == test_recipe.title
     assert "instructions" in data
     assert "recipe_ingredients" in data
+
+
+def test_spoonacular_instructions_are_cached_across_detail_routes(authenticated_client, db_session, test_user):
+    recipe = models.Recipe(
+        title="Spoonacular Recipe",
+        description="Test recipe",
+        spoonacular_id=12345,
+        user_id=test_user.id,
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    with patch("crud.recipes.get_recipe_instructions", return_value=[
+        {"name": "Sauce", "steps": [{"number": 1, "step": "Chop the tomatoes."}]},
+        {"name": "Pasta", "steps": [{"number": 1, "step": "Cook the pasta."}]},
+    ]) as fetch_instructions:
+        response = authenticated_client.get(f"/recipes/{recipe.id}/availability/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["recipe"]["instructions"] == "Chop the tomatoes.\nCook the pasta."
+
+        response = authenticated_client.get(f"/recipes/{recipe.id}")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["instructions"] == "Chop the tomatoes.\nCook the pasta."
+        fetch_instructions.assert_called_once_with(12345)
+
+    db_session.refresh(recipe)
+    assert recipe.instructions == "Chop the tomatoes.\nCook the pasta."
+
+
+def test_spoonacular_recipe_without_steps_caches_empty_result(client, db_session):
+    recipe = models.Recipe(title="No Steps", spoonacular_id=67890)
+    db_session.add(recipe)
+    db_session.commit()
+
+    with patch("crud.recipes.get_recipe_instructions", return_value=[]) as fetch_instructions:
+        first = client.get(f"/recipes/{recipe.id}")
+        second = client.get(f"/recipes/{recipe.id}")
+
+    assert first.status_code == status.HTTP_200_OK
+    assert second.status_code == status.HTTP_200_OK
+    assert first.json()["instructions"] == ""
+    fetch_instructions.assert_called_once_with(67890)
+
+
+def test_local_recipe_without_instructions_does_not_use_spoonacular(client, db_session):
+    recipe = models.Recipe(title="Local Recipe")
+    db_session.add(recipe)
+    db_session.commit()
+
+    with patch("crud.recipes.get_external_recipe_by_id") as fetch_recipe, patch(
+        "crud.recipes.get_recipe_instructions"
+    ) as fetch_instructions:
+        response = client.get(f"/recipes/{recipe.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["instructions"] is None
+    fetch_recipe.assert_not_called()
+    fetch_instructions.assert_not_called()
+
+
+def test_spoonacular_refresh_preserves_cached_instructions(client, db_session):
+    recipe = models.Recipe(
+        title="Old Title",
+        instructions="Cook it.",
+        spoonacular_id=54321,
+        last_updated=datetime.datetime.now() - datetime.timedelta(days=31),
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    external_data = {
+        "id": 54321,
+        "title": "New Title",
+        "image": "image.jpg",
+        "summary": "Updated",
+        "servings": 2,
+        "readyInMinutes": 30,
+        "extendedIngredients": [],
+    }
+    with patch("crud.recipes.get_external_recipe_by_id", return_value=external_data), patch(
+        "crud.recipes.get_recipe_instructions"
+    ) as fetch_instructions:
+        response = client.get(f"/recipes/{recipe.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["title"] == "New Title"
+    assert response.json()["instructions"] == "Cook it."
+    fetch_instructions.assert_not_called()
 
 
 def test_get_recipes(client, test_recipe):

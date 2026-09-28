@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from crud.ingredients import create_local_ingredients_from_spoonacular_recipe
-from util.spoonacular import get_external_recipe_by_id, get_random_recipes, get_recipes_by_ingredients as get_recipes_by_ingredients_external
+from util.spoonacular import get_external_recipe_by_id, get_random_recipes, get_recipe_instructions, get_recipes_by_ingredients as get_recipes_by_ingredients_external
 
 
 def _normalize_ingredient_name(name: str) -> str:
@@ -55,7 +55,7 @@ def get_recipe_by_id(db: Session, recipe_id: int):
     if recipe is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    if recipe.last_updated is None or recipe.last_updated < old_date and recipe.spoonacular_id is not None:
+    if recipe.spoonacular_id is not None and (recipe.last_updated is None or recipe.last_updated < old_date):
         # logger.info(f"Making external API request for spooancular ID: {recipe.spoonacular_id}")
         external_data = get_external_recipe_by_id(recipe.spoonacular_id)
 
@@ -63,9 +63,18 @@ def get_recipe_by_id(db: Session, recipe_id: int):
         if external_data is None:
             raise HTTPException(status_code=404, detail="Recipe not found")
 
-        return create_local_recipe_from_spoonacular(db, external_data)
+        recipe = create_local_recipe_from_spoonacular(db, external_data)
+
+    if recipe.spoonacular_id is not None and recipe.instructions is None:
+        instruction_sections = get_recipe_instructions(recipe.spoonacular_id)
+        recipe.instructions = "\n".join(
+            step["step"]
+            for section in instruction_sections
+            for step in section.get("steps", [])
+        )
+        db.commit()
+        db.refresh(recipe)
     
-    # Return the local recipe if it exists and was updated within the last 30 days
     return recipe
 
 def get_recipes(
