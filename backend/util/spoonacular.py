@@ -14,6 +14,7 @@ def search_recipes(query=None, ingredients=None, number=10):
     params = {
         "apiKey": SPOONACULAR_API_KEY,
         "number": number,
+        "addRecipeInstructions": True 
     }
 
     if query:
