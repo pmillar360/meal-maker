@@ -14,7 +14,7 @@ dependencies = [
     "psycopg2-binary",
     "pydantic",
     "python-dotenv",
-    "python-jose",
+    "pyjwt",
     "python-multipart",
     "requests",
     "sqlalchemy",

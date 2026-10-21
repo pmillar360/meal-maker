@@ -45,6 +45,17 @@ Implementation flow is organized as route handlers in the backend app layer, dat
 ```bash
 cd backend
 uv sync
+```
+
+Set `SECRET_KEY` in `backend/.env` or the backend process environment before starting the app. Generate a random value with:
+
+```bash
+uv run python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Keep this value private and stable across backend instances. The backend refuses to start without it. Configure it in your deployment environment too; changing it invalidates existing tokens.
+
+```bash
 uv run uvicorn app.main:app --reload
 ```
 
@@ -73,6 +84,13 @@ alembic upgrade head
 For production deploys, run `alembic upgrade head` against the live Postgres database before the app starts serving traffic. The app keeps SQLite as the default local fallback, but production should use the configured Postgres `DATABASE_URL`.
 
 ## Testing and Verification
+
+The dependency audit runs on pull requests, pushes to `master` and `prod`, and weekly. To run it locally:
+
+```bash
+cd backend
+uv audit --locked --preview-features audit-command
+```
 
 Use the following checks before considering MVP work complete:
 

@@ -29,6 +29,7 @@ export default defineConfig({
       env: {
         ...process.env,
         DATABASE_URL: 'sqlite:///./e2e_test.db',
+        SECRET_KEY: 'meal-maker-e2e-tests-only-secret-key',
         CORS_ALLOW_ORIGINS: frontendUrl,
       },
       url: `${backendUrl}/health`,

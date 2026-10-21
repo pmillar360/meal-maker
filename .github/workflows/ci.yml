@@ -30,7 +30,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "0.13.1"
+          version: "0.13.4"
           enable-cache: true
 
       - name: Sync dependencies
@@ -86,7 +86,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "0.13.1"
+          version: "0.13.4"
           enable-cache: true
 
       - name: Sync backend dependencies
@@ -138,11 +138,13 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "0.13.1"
+          version: "0.13.4"
           enable-cache: true
 
       - name: Sync dependencies
         run: uv sync --frozen
 
       - name: Check app imports
+        env:
+          SECRET_KEY: meal-maker-smoke-check-only-secret-key
         run: uv run python -c "import app.main; print(app.main.app.title)"

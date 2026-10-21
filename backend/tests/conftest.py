@@ -1,5 +1,8 @@
 import os
 from pathlib import Path
+
+os.environ["SECRET_KEY"] = "meal-maker-backend-tests-only-secret-key"
+
 from util.auth import hash_password
 
 TEST_DB_PATH = Path(__file__).resolve().parent / "test_db.db"
