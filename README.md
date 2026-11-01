@@ -38,13 +38,28 @@ Implementation flow is organized as route handlers in the backend app layer, dat
 - Node.js 14+
 - Python 3.13+
 - uv (Python package/project manager)
-- PostgreSQL for full local parity, or SQLite for lightweight development
+- Docker Desktop running Linux containers for the local PostgreSQL database
 
 ### Backend Setup
+
+Start only PostgreSQL from the repository root (the frontend and backend can run locally):
+
+```bash
+docker compose up -d --wait db
+```
+
+Add this local development connection to `backend/.env`:
+
+```dotenv
+DATABASE_URL=postgresql://meal_maker:meal_maker_dev@127.0.0.1:5433/meal_maker
+```
+
+PostgreSQL is available only on localhost port 5433, so it can coexist with a native PostgreSQL installation on port 5432. These credentials are for local development only. This creates a fresh database; existing native PostgreSQL or SQLite data is not copied.
 
 ```bash
 cd backend
 uv sync
+uv run alembic upgrade head
 ```
 
 Set `SECRET_KEY` in `backend/.env` or the backend process environment before starting the app. Generate a random value with:
@@ -69,16 +84,22 @@ pnpm dev
 
 ### Docker Setup
 
+To run all services in Docker instead, initialize the database before starting the app:
+
 ```bash
+docker compose up -d --wait db
+docker compose run --build --rm backend uv run alembic upgrade head
 docker compose up --build
 ```
+
+The containerized backend connects to `db:5432`; the locally running backend uses `127.0.0.1:5433`. Database data persists in the `meal_maker_postgres_data` Docker volume. Stop only the database with `docker compose stop db` and start it again with `docker compose up -d --wait db`. `docker compose down` also preserves the data; adding `-v` deletes it.
 
 ### Database Migrations
 
 ```bash
 cd backend
-alembic revision -m "describe change"
-alembic upgrade head
+uv run alembic revision -m "describe change"
+uv run alembic upgrade head
 ```
 
 For production deploys, run `alembic upgrade head` against the live Postgres database before the app starts serving traffic. The app keeps SQLite as the default local fallback, but production should use the configured Postgres `DATABASE_URL`.

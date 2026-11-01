@@ -1,4 +1,20 @@
 services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: meal_maker
+      POSTGRES_PASSWORD: meal_maker_dev
+      POSTGRES_DB: meal_maker
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meal_maker -d meal_maker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: ./backend
     container_name: meal-maker-backend
@@ -8,6 +24,11 @@ services:
       - "8000:8000"
     env_file:
       - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://meal_maker:meal_maker_dev@db:5432/meal_maker
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped 
 
   frontend:
@@ -19,3 +40,7 @@ services:
       - "3000:3000"
     env_file:
       - ./frontend/.env
+
+volumes:
+  postgres_data:
+    # name: meal_maker_data
