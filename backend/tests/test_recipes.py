@@ -63,6 +63,36 @@ def test_get_recipe_by_id(client, test_recipe):
     assert "recipe_ingredients" in data
 
 
+def test_recipe_routes_use_local_id_when_ids_overlap(authenticated_client, db_session, test_user):
+    imported_recipe = _create_recipe_with_ingredients(db_session, test_user, ["Onion"])
+    local_recipe = _create_recipe_with_ingredients(db_session, test_user, ["Basil"])
+    imported_recipe.spoonacular_id = local_recipe.id
+    db_session.commit()
+
+    response = authenticated_client.get(f"/recipes/{local_recipe.id}")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == local_recipe.id
+
+    response = authenticated_client.get(f"/recipes/{local_recipe.id}/availability/")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["missing_ingredient_names"] == ["Basil"]
+
+    response = authenticated_client.post(f"/recipes/{local_recipe.id}/missing-to-shopping-list/")
+    assert response.status_code == status.HTTP_201_CREATED
+    assert [item["name"] for item in response.json()["created_items"]] == ["Basil"]
+
+
+def test_recipe_routes_reject_spoonacular_id_without_local_match(authenticated_client, db_session):
+    recipe = models.Recipe(title="Imported recipe", instructions="Cook it.", spoonacular_id=54321)
+    db_session.add(recipe)
+    db_session.commit()
+
+    recipe_url = f"/recipes/{recipe.spoonacular_id}"
+    assert authenticated_client.get(recipe_url).status_code == status.HTTP_404_NOT_FOUND
+    assert authenticated_client.get(f"{recipe_url}/availability/").status_code == status.HTTP_404_NOT_FOUND
+    assert authenticated_client.post(f"{recipe_url}/missing-to-shopping-list/").status_code == status.HTTP_404_NOT_FOUND
+
+
 def test_spoonacular_instructions_are_cached_across_detail_routes(authenticated_client, db_session, test_user):
     recipe = models.Recipe(
         title="Spoonacular Recipe",

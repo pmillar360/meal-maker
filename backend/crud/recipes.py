@@ -2,7 +2,7 @@ import datetime
 from typing import List, Optional
 from fastapi import HTTPException
 from requests.exceptions import RequestException
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
@@ -50,11 +50,7 @@ def _build_ingredient_statuses(recipe: models.Recipe, fridge_name_set: set[str])
     return ingredient_statuses, missing_recipe_ingredients
 
 def get_recipe_by_id(db: Session, recipe_id: int):
-    recipe = db.query(models.Recipe).filter(
-    or_(
-        models.Recipe.id == recipe_id,
-        models.Recipe.spoonacular_id == recipe_id
-    )).first()
+    recipe = db.get(models.Recipe, recipe_id)
     
     old_date = datetime.datetime.now() - datetime.timedelta(days=30)
 
