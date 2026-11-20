@@ -32,18 +32,20 @@ vi.mock('../context/ToastContext', () => ({
 }));
 
 describe('recipe detail workflow', () => {
+  const availability = {
+    recipe: tomatoPasta,
+    ingredient_statuses: [
+      { ingredient: tomato, has_in_fridge: true, missing: false },
+      { ingredient: pasta, has_in_fridge: false, missing: true },
+    ],
+    total_ingredients: 2,
+    available_ingredients: 1,
+    missing_ingredients: 1,
+    missing_ingredient_names: ['Pasta'],
+  };
+
   beforeEach(() => {
-    mocks.getRecipeAvailabilityById.mockResolvedValue({
-      recipe: tomatoPasta,
-      ingredient_statuses: [
-        { ingredient: tomato, has_in_fridge: true, missing: false },
-        { ingredient: pasta, has_in_fridge: false, missing: true },
-      ],
-      total_ingredients: 2,
-      available_ingredients: 1,
-      missing_ingredients: 1,
-      missing_ingredient_names: ['Pasta'],
-    });
+    mocks.getRecipeAvailabilityById.mockResolvedValue(availability);
     mocks.addMissingIngredientsToShoppingList.mockResolvedValue({
       created_items: [{ id: 30, name: 'Pasta', quantity: '200 g' }],
       created_count: 1,
@@ -71,5 +73,19 @@ describe('recipe detail workflow', () => {
       'Added 1 missing ingredient(s) to your shopping list.',
       'success'
     );
+  });
+
+  it('renders imported descriptions as plain text', async () => {
+    mocks.getRecipeAvailabilityById.mockResolvedValueOnce({
+      ...availability,
+      recipe: {
+        ...tomatoPasta,
+        description: 'Quick <strong>pasta</strong> &amp; sauce. <a href="/recipes">More recipes</a>.',
+      },
+    });
+    render(<RecipeDetail />);
+
+    const description = await screen.findByText('Quick pasta & sauce. More recipes.');
+    expect(description.childElementCount).toBe(0);
   });
 });

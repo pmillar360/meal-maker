@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { toastCopy } from "../services/toastCopy";
 
 export default function UserManagement() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const { isLoggedIn, user, login, register, logout } = useAuth();
+    const { addToast } = useToast();
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -38,8 +41,8 @@ export default function UserManagement() {
 
         try {
             await logout();
-        } catch (error) {
-            console.error("Error logging out:", error);
+        } catch {
+            addToast(toastCopy.auth.logoutFailed, 'warning');
         }
     }
 

@@ -59,6 +59,11 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Logout clears local auth and reports failures directly to the user.
+    if (originalRequest.method === 'delete' && originalRequest.url === '/auth/tokens/current') {
+      return Promise.reject(error);
+    }
+
     // Network error (no response) means the server is down or sleeping
     if (!error.response && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('server:down'));

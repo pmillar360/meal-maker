@@ -14,6 +14,19 @@ jobs:
     name: Backend tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: meal_maker_migration_test
+          POSTGRES_PASSWORD: migration-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d meal_maker_migration_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -37,6 +50,8 @@ jobs:
         run: uv sync --frozen
 
       - name: Run backend tests
+        env:
+          TEST_POSTGRES_MIGRATION_URL: postgresql://postgres:migration-test@127.0.0.1:5432/meal_maker_migration_test
         run: uv run pytest --tb=short --verbose
 
   frontend-tests:

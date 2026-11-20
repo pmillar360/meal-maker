@@ -4,6 +4,7 @@ import axios from "axios";
 
 let accessToken: string | null = null;
 let pendingRefresh: Promise<boolean> | null = null;
+let refreshAllowed = true;
 
 interface TokenResponse {
   access_token: string;
@@ -31,6 +32,9 @@ const requestFreshAccessToken = async (): Promise<boolean> => {
       {},
       { withCredentials: true }
     );
+    if (!refreshAllowed) {
+      return false;
+    }
     setToken(response.data);
     return true;
   } catch (error) {
@@ -40,6 +44,9 @@ const requestFreshAccessToken = async (): Promise<boolean> => {
 };
 
 export const refreshAccessToken = (): Promise<boolean> => {
+  if (!refreshAllowed) {
+    return Promise.resolve(false);
+  }
   if (!pendingRefresh) {
     pendingRefresh = requestFreshAccessToken().finally(() => {
       pendingRefresh = null;
@@ -50,6 +57,7 @@ export const refreshAccessToken = (): Promise<boolean> => {
 
 export const registerUser = async (username: string, password: string) => {
   const response = await api.post<TokenResponse>(`/users`, { username, password });
+  refreshAllowed = true;
   setToken(response.data);
   return response.data;
 };
@@ -57,6 +65,7 @@ export const registerUser = async (username: string, password: string) => {
 export const loginUser = async (username: string, password: string): Promise<boolean> => {
   try {
     const response = await api.post<TokenResponse>("/auth/tokens", { username, password });
+    refreshAllowed = true;
     setToken(response.data);
     return true;
   } catch (error: any) {
@@ -94,11 +103,9 @@ export const getCurrentUser = async (): Promise<User> => {
 };
 
 export const logoutUser = async () => {
+  refreshAllowed = false;
+  clearToken();
+  // Let any refresh finish rotating the cookie before the server revokes it.
   await pendingRefresh;
-  try {
-    await api.delete("/auth/tokens/current");
-    clearToken();
-  } catch (error: any) {
-
-  }
+  await api.delete("/auth/tokens/current");
 };

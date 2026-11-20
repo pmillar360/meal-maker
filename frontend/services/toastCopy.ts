@@ -4,6 +4,9 @@ const getItemName = (itemName?: string): string => {
 };
 
 export const toastCopy = {
+  auth: {
+    logoutFailed: 'You signed out on this page, but the server session could not be ended.',
+  },
   favourites: {
     loadFailed: 'Could not load favourite recipes',
     added: 'Added recipe to favourites',

@@ -11,6 +11,15 @@ import { useToast } from '../../context/ToastContext';
 import { toastCopy } from '../../services/toastCopy';
 import { useAuth } from '../../context/AuthContext';
 
+function descriptionText(html: string): string {
+    // Template contents are inert. Only their text is passed to React.
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    template.content.querySelectorAll('script, style').forEach((element) => element.remove());
+    template.content.querySelectorAll('br, div, li, p').forEach((element) => element.after(' '));
+    return template.content.textContent?.trim() ?? '';
+}
+
 export default function RecipeDetail() {
     const router = useRouter();
     const { id } = router.query as { id?: string };
@@ -135,7 +144,7 @@ export default function RecipeDetail() {
                 </div>
                 <div className='bg-white rounded-lg shadow-md gap-4 p-6 mb-8'>
                     <h2 className='text-xl font-semibold mb-4'>Description</h2>
-                    <p dangerouslySetInnerHTML={{__html: recipe.description}}></p>
+                    <p>{descriptionText(recipe.description)}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     <div className="bg-white rounded-lg shadow-md p-6">

@@ -78,6 +78,19 @@ test('recipe details show ingredients, cooking time, and servings', async ({ pag
   await expect(page.getByRole('cell', { name: 'Pasta', exact: true })).toBeVisible();
 });
 
+test('a failed logout returns to guest mode and shows a warning', async ({ page }) => {
+  await page.goto('/recipes');
+  await register(page);
+  await page.route('**/auth/tokens/current', (route) => route.abort());
+
+  await page.getByRole('button', { name: 'Log Out' }).click();
+
+  await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Shopping List' })).toHaveCount(0);
+  await expect(page.getByText('You signed out on this page, but the server session could not be ended.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Server is (Waking Up|Ready)/ })).toHaveCount(0);
+});
+
 test('missing ingredients generate a shopping list that can be updated and deleted', async ({ page }) => {
   await page.goto('/');
   await register(page);

@@ -270,20 +270,20 @@ def test_suggestions_can_use_any_on_hand_ingredient(client, db_session, test_use
     assert {recipe["id"] for recipe in response.json()} == {onion.id, garlic.id}
 
 
-def test_get_recipes_with_meal_type(client, test_recipe):
-    params = {"meal_type": test_recipe.meal_types[0]}
-    response = client.get("/recipes/", params=params)
+def test_get_recipes_with_meal_type(client, db_session, test_user, test_recipe, test_meal_type):
+    lunch = models.MealType(name="Lunch")
+    nonmatching = _create_recipe_with_ingredients(
+        db_session, test_user, [], meal_type=lunch, title="Lunch Recipe"
+    )
+
+    unfiltered = client.get("/recipes/")
+    assert unfiltered.status_code == status.HTTP_200_OK
+    assert {recipe["id"] for recipe in unfiltered.json()} == {test_recipe.id, nonmatching.id}
+
+    response = client.get("/recipes/", params={"meal_types": test_meal_type.name})
 
     assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) > 0
-    assert any(recipe["id"] == test_recipe.id for recipe in data)
-    # Check that all returned recipes have a meal type with the same id as test_recipe's meal type
-    # NOTE Cannot check by object since it is just json when returned?
-    for recipe in data:
-        meal_type_ids = [mt["id"] for mt in recipe["meal_types"]]
-        assert test_recipe.meal_types[0].id in meal_type_ids
+    assert [recipe["id"] for recipe in response.json()] == [test_recipe.id]
 
 
 def test_get_recipes_with_fridge_availability(authenticated_client, db_session, test_user, test_meal_type):
