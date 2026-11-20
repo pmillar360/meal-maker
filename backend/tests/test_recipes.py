@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from fastapi import status
+from requests.exceptions import Timeout
 from app import models
 
 
@@ -148,6 +149,40 @@ def test_spoonacular_refresh_preserves_cached_instructions(client, db_session):
     assert response.json()["title"] == "New Title"
     assert response.json()["instructions"] == "Cook it."
     fetch_instructions.assert_not_called()
+
+
+@pytest.mark.parametrize("stale", [True, False])
+def test_recipe_detail_survives_spoonacular_timeout(client, db_session, stale):
+    instructions = "Cook it." if stale else None
+    recipe = models.Recipe(
+        title="Cached recipe",
+        instructions=instructions,
+        spoonacular_id=54321,
+        last_updated=datetime.datetime.now() - datetime.timedelta(days=31 if stale else 0),
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    with patch("util.spoonacular.requests.get", side_effect=Timeout) as request:
+        response = client.get(f"/recipes/{recipe.id}")
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Cached recipe"
+    assert response.json()["instructions"] == instructions
+    request.assert_called_once()
+    assert request.call_args.kwargs["timeout"] == (3, 8)
+
+
+def test_suggestions_return_local_matches_after_spoonacular_timeout(client, db_session, test_user):
+    recipe = _create_recipe_with_ingredients(db_session, test_user, ["Onion"])
+
+    with patch("util.spoonacular.requests.get", side_effect=Timeout) as request:
+        response = client.get("/recipes/suggestions/", params={"ingredients": "Onion"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()] == [recipe.id]
+    request.assert_called_once()
+    assert request.call_args.kwargs["timeout"] == (3, 8)
 
 
 def test_get_recipes(client, test_recipe):

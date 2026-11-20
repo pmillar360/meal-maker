@@ -1,11 +1,13 @@
 import datetime
 from typing import List, Optional
 from fastapi import HTTPException
+from requests.exceptions import RequestException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app import models
 from crud.ingredients import create_local_ingredients_from_spoonacular_recipe
+from util.logger import log
 from util.spoonacular import get_external_recipe_by_id, get_random_recipes, get_recipe_instructions, get_recipes_by_ingredients as get_recipes_by_ingredients_external
 
 
@@ -61,7 +63,11 @@ def get_recipe_by_id(db: Session, recipe_id: int):
 
     if recipe.spoonacular_id is not None and (recipe.last_updated is None or recipe.last_updated < old_date):
         # logger.info(f"Making external API request for spooancular ID: {recipe.spoonacular_id}")
-        external_data = get_external_recipe_by_id(recipe.spoonacular_id)
+        try:
+            external_data = get_external_recipe_by_id(recipe.spoonacular_id)
+        except RequestException as error:
+            log(f"Spoonacular recipe refresh failed: {type(error).__name__}", level=30)
+            return recipe
 
         # If recipe cannot be found via API return not found
         if external_data is None:
@@ -70,7 +76,11 @@ def get_recipe_by_id(db: Session, recipe_id: int):
         recipe = create_local_recipe_from_spoonacular(db, external_data)
 
     if recipe.spoonacular_id is not None and recipe.instructions is None:
-        instruction_sections = get_recipe_instructions(recipe.spoonacular_id)
+        try:
+            instruction_sections = get_recipe_instructions(recipe.spoonacular_id)
+        except RequestException as error:
+            log(f"Spoonacular instructions request failed: {type(error).__name__}", level=30)
+            return recipe
         recipe.instructions = "\n".join(
             step["step"]
             for section in instruction_sections
@@ -168,7 +178,7 @@ def get_featured_recipes(db: Session, number: int):
         return cached_recipes
     
     except Exception as e:
-        print(f"Error fetching featured recipes: {e}")
+        log(f"Error fetching featured recipes: {type(e).__name__}", level=30)
 
         return (
             db.query(models.Recipe)
@@ -192,7 +202,11 @@ def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[st
     if len(recipes) < number and fetchExternal:
         # Fetch recipes from external API
         count = number - len(recipes)
-        external_recipes = get_recipes_by_ingredients_external(ingredient_names, count)
+        try:
+            external_recipes = get_recipes_by_ingredients_external(ingredient_names, count)
+        except RequestException as error:
+            log(f"Spoonacular suggestions request failed: {type(error).__name__}", level=30)
+            return recipes
 
         # Cache external recipes locally
         for ext_recipe in external_recipes:
@@ -200,7 +214,7 @@ def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[st
                 local_recipe = create_local_recipe_from_spoonacular(db, get_external_recipe_by_id(ext_recipe["id"])) # Need to fetch full recipe details
                 recipes.append(local_recipe)
             except Exception as e:
-                print(f"Error caching recipe: {e}")
+                log(f"Error caching suggested recipe: {type(e).__name__}", level=30)
                 continue
     
     return recipes

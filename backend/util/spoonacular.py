@@ -4,6 +4,7 @@ from util.logger import log
 
 SPOONACULAR_API_KEY = os.getenv("SPOONACULAR_API_KEY")
 BASE_URL = "https://api.spoonacular.com"
+REQUEST_TIMEOUT = (3, 8)  # Connect and read timeouts in seconds.
 
 # Spoonacular gives 50 points/day then no more calls
 
@@ -23,7 +24,7 @@ def search_recipes(query=None, ingredients=None, number=10):
         params["includeIngredients"] = ",".join(ingredients)
 
     log(f"Searching Spoonacular recipes with query: {query} and ingredients: {ingredients}", level=20)
-    response = requests.get(RECIPE_URL, params=params)
+    response = requests.get(RECIPE_URL, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     return response.json()
 
@@ -38,7 +39,7 @@ def get_external_recipe_by_id(id: int):
     }
 
     log(f"Fetching Spoonacular recipe by ID: {id}", level=20)
-    response = requests.get(RECIPE_URL, params=params)
+    response = requests.get(RECIPE_URL, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
 
     return response.json()
@@ -55,7 +56,7 @@ def search_ingredients(query=None, number=10):
         params["query"] = query
 
     log(f"Searching Spoonacular ingredients with query: {query}", level=20)
-    response = requests.get(INGREDIENT_URL, params=params)
+    response = requests.get(INGREDIENT_URL, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     return response.json()
 
@@ -70,7 +71,7 @@ def get_random_recipes(number=3):
     }
 
     log(f"Fetching {number} random Spoonacular recipes", level=20)
-    response = requests.get(REQ_URL, params=params)
+    response = requests.get(REQ_URL, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
 
     return response.json()
@@ -88,7 +89,7 @@ def get_recipes_by_ingredients(ingredients, number=10, ingredient_option=1, igno
     }
 
     log(f"Fetching Spoonacular recipes by ingredients: {ingredients}", level=20)
-    response = requests.get(REQ_URL, params=params)
+    response = requests.get(REQ_URL, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
 
     return response.json()
@@ -103,7 +104,7 @@ def get_recipe_instructions(spoonacular_id: int):
 
     log(f"Fetching Spoonacular recipe instructions by ID: {spoonacular_id}", level=20)
     
-    response = requests.get(RECIPE_URL, params=params)
+    response = requests.get(RECIPE_URL, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
 
     return response.json()
@@ -119,7 +120,10 @@ def analyze_recipe_instructions(recipe_id: int, instructions: str):
 
     log(f"Analyzing recipe instructions using Spoonacular for recipe ID: {recipe_id}", level=20)
 
-    response = requests.post(RECIPE_URL, params=params, json={"id": recipe_id, "instructions": instructions})
+    response = requests.post(
+        RECIPE_URL, params=params, json={"id": recipe_id, "instructions": instructions},
+        timeout=REQUEST_TIMEOUT,
+    )
     response.raise_for_status()
 
     return response.json()
