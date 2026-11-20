@@ -104,6 +104,10 @@ uv run alembic upgrade head
 
 For production deploys, run `alembic upgrade head` against the live Postgres database before the app starts serving traffic. The app keeps SQLite as the default local fallback, but production should use the configured Postgres `DATABASE_URL`.
 
+The account identity migration requires unique usernames after lowercasing. Check for existing collisions with `SELECT lower(username), count(*) FROM users GROUP BY lower(username) HAVING count(*) > 1;` and resolve them before upgrading. The migration preserves username spelling and existing account data. Users must sign in again after deployment because tokens issued before this change are no longer accepted.
+
+For an existing SQLite database, back it up and migrate it before starting the updated app. If it was created through the SQLite fallback and has no Alembic history, verify that its schema matches revision `7bd3a31eecbf` before stamping that revision and upgrading. A fresh SQLite database can still be created by starting the app.
+
 ## Testing and Verification
 
 The dependency audit runs on pull requests, pushes to `master` and `prod`, and weekly. To run it locally:

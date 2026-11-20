@@ -140,18 +140,6 @@ export default function Recipes() {
     loadFridgeIngredientNames();
   }, [isLoggedIn]);
 
-  const selectedIngredientFilters = useMemo(() => {
-    const dedupedByName = new Map<string, Ingredient>();
-
-    filters.ingredients.forEach((ingredient) => {
-      const key = ingredient.name.trim().toLowerCase();
-      if (!key) return;
-      dedupedByName.set(key, ingredient);
-    });
-
-    return Array.from(dedupedByName.values());
-  }, [filters.ingredients]);
-
   const normalizedFridgeIngredientNames = useMemo(
     () => new Set(fridgeIngredientNames.map((name) => name.trim().toLowerCase()).filter(Boolean)),
     [fridgeIngredientNames]
@@ -179,12 +167,12 @@ export default function Recipes() {
 
   const queryFilters = useMemo(
     () => ({
-      ingredients: selectedIngredientFilters,
+      ingredients: filters.ingredients,
       mealTypes: filters.mealTypes,
       diet: filters.diet,
       search: debouncedSearch,
     }),
-    [selectedIngredientFilters, filters.mealTypes, filters.diet, debouncedSearch]
+    [filters.ingredients, filters.mealTypes, filters.diet, debouncedSearch]
   );
 
   const normalizedSearch = debouncedSearch.toLowerCase();

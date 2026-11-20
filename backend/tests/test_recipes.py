@@ -1,6 +1,7 @@
 import datetime
 from unittest.mock import patch
 
+import pytest
 from fastapi import status
 from app import models
 
@@ -157,6 +158,51 @@ def test_get_recipes(client, test_recipe):
     assert isinstance(data, list)
     assert len(data) > 0
     assert any(recipe["id"] == test_recipe.id for recipe in data)
+
+
+@pytest.mark.parametrize("with_availability", [False, True])
+def test_recipe_filters_require_all_selected_ingredient_ids(
+    authenticated_client, db_session, test_user, with_availability,
+):
+    match = _create_recipe_with_ingredients(db_session, test_user, ["Onion", "Garlic"])
+    _create_recipe_with_ingredients(db_session, test_user, ["Onion"])
+    _create_recipe_with_ingredients(db_session, test_user, ["Red Onion", "Garlic"])
+    ingredient_ids = [item.ingredient_id for item in match.recipe_ingredients]
+    path = "/recipes/with-fridge-availability/" if with_availability else "/recipes/"
+    params = [("ingredient_ids", ingredient_id) for ingredient_id in ingredient_ids]
+
+    response = authenticated_client.get(path, params=params)
+    assert response.status_code == 200
+    results = response.json()
+    recipes = [item["recipe"] for item in results] if with_availability else results
+    assert [recipe["id"] for recipe in recipes] == [match.id]
+
+    response = authenticated_client.get(path, params=[*params, ("ingredient_ids", 99999)])
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_legacy_ingredient_filter_uses_all_exact_names(client, db_session, test_user):
+    _create_recipe_with_ingredients(db_session, test_user, ["Red Onion", "Garlic"])
+    match = _create_recipe_with_ingredients(db_session, test_user, ["Onion", "Garlic"])
+    _create_recipe_with_ingredients(db_session, test_user, ["Onion"])
+
+    response = client.get("/recipes/", params={"ingredients": " onion , garlic, ONION "})
+    assert response.status_code == 200
+    assert [recipe["id"] for recipe in response.json()] == [match.id]
+    assert client.get("/recipes/", params={"ingredients": "onion,unknown"}).json() == []
+
+
+def test_suggestions_can_use_any_on_hand_ingredient(client, db_session, test_user):
+    onion = _create_recipe_with_ingredients(db_session, test_user, ["Onion"])
+    garlic = _create_recipe_with_ingredients(db_session, test_user, ["Garlic"])
+    _create_recipe_with_ingredients(db_session, test_user, ["Red Onion"])
+
+    with patch("crud.recipes.get_recipes_by_ingredients_external", return_value=[]):
+        response = client.get("/recipes/suggestions/", params={"ingredients": "Onion,Garlic"})
+
+    assert response.status_code == 200
+    assert {recipe["id"] for recipe in response.json()} == {onion.id, garlic.id}
 
 
 def test_get_recipes_with_meal_type(client, test_recipe):

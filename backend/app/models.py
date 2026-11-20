@@ -1,5 +1,6 @@
 import datetime
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, Table, DateTime
+from uuid import uuid4
+from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Index, Integer, String, Text, Table, DateTime, UniqueConstraint, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from .database import Base
@@ -45,6 +46,11 @@ class User(Base):
 
     id = mapped_column(Integer, primary_key=True, index=True)
     username = mapped_column(String, unique=True, index=True)
+    auth_id: Mapped[str] = mapped_column(String(32), default=lambda: uuid4().hex)
+    __table_args__ = (
+        Index("ix_users_username_lower", func.lower(username), unique=True),
+        UniqueConstraint("auth_id", name="uq_users_auth_id"),
+    )
     hashed_password = mapped_column(String)
     is_active = mapped_column(Boolean, default=True)
     is_superuser = mapped_column(Boolean, default=False)
@@ -54,6 +60,14 @@ class User(Base):
     favourite_recipes = relationship("FavouriteRecipe", back_populates="user")
     shopping_list_items = relationship("ShoppingListItem", back_populates="user", cascade="all, delete-orphan")
     fridge_items = relationship("FridgeItem", back_populates="user", cascade="all, delete-orphan")
+
+class RefreshSession(Base):
+    __tablename__ = "refresh_sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_auth_id: Mapped[str] = mapped_column(ForeignKey("users.auth_id", ondelete="CASCADE"), index=True)
+    expires_at: Mapped[int] = mapped_column(BigInteger, index=True)
+
 
 class Recipe(Base):
     __tablename__ = "recipes"

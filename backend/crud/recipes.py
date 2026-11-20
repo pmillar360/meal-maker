@@ -13,6 +13,10 @@ def _normalize_ingredient_name(name: str) -> str:
     return (name or "").strip().lower()
 
 
+def _normalized_ingredient_names(ingredients: List[str]) -> set[str]:
+    return {_normalize_ingredient_name(name) for name in ingredients if name.strip()}
+
+
 def _get_user_fridge_name_set(db: Session, user_id: int) -> set[str]:
     fridge_items = db.query(models.FridgeItem).filter(models.FridgeItem.user_id == user_id).all()
     return {
@@ -79,12 +83,14 @@ def get_recipe_by_id(db: Session, recipe_id: int):
 
 def get_recipes(
     db: Session, 
-    ingredients: List[str] = [], 
+    ingredients: Optional[List[str]] = None,
     meal_types: Optional[List[str]] = None, 
     diet: Optional[str] = None,
     search: Optional[str] = None,
     skip: int = 0, 
-    limit: int = 100
+    limit: int = 100,
+    *,
+    ingredient_ids: Optional[List[int]] = None,
 ):
     """Get recipes with optional filtering"""
     query = db.query(models.Recipe)
@@ -108,14 +114,15 @@ def get_recipes(
     if search and search.strip():
         query = query.filter(models.Recipe.title.ilike(f"%{search.strip()}%"))
     
-    # Apply ingredient filter if ingredients are provided
-    if ingredients:
-        for ingredient_name in ingredients:
-            ingredient = db.query(models.Ingredient).filter(
-                models.Ingredient.name.ilike(f"%{ingredient_name.strip()}%")
-            ).first()
-            if ingredient:
-                query = query.join(models.Recipe.recipe_ingredients).filter(models.RecipeIngredient.ingredient_id == ingredient.id)
+    # Each selected ingredient must match its own recipe ingredient row.
+    for ingredient_id in set(ingredient_ids or []):
+        query = query.filter(models.Recipe.recipe_ingredients.any(
+            models.RecipeIngredient.ingredient_id == ingredient_id
+        ))
+    for name in _normalized_ingredient_names(ingredients or []):
+        query = query.filter(models.Recipe.recipe_ingredients.any(
+            models.RecipeIngredient.ingredient.has(func.lower(models.Ingredient.name) == name)
+        ))
     
     return query.offset(skip).limit(limit).all()
 
@@ -172,10 +179,14 @@ def get_featured_recipes(db: Session, number: int):
 
 # TODO Check for duplicates when searching external recipes?
 def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[str], number: int = 10, fetchExternal: bool = False):
-    """Get recipes that can be made with the given ingredients"""
-    recipes = []
-
-    recipes = get_recipes(db, ingredients=ingredient_names, limit=number)
+    """Suggest recipes that use at least one on-hand ingredient."""
+    query = db.query(models.Recipe)
+    names = _normalized_ingredient_names(ingredient_names)
+    if names:
+        query = query.filter(models.Recipe.recipe_ingredients.any(
+            models.RecipeIngredient.ingredient.has(func.lower(models.Ingredient.name).in_(names))
+        ))
+    recipes = query.limit(number).all()
 
     # This is expensive on the API, so only do it if requested
     if len(recipes) < number and fetchExternal:
@@ -198,15 +209,17 @@ def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[st
 def get_recipes_with_fridge_availability(
     db: Session,
     user_id: int,
-    ingredients: List[str] = [],
+    ingredients: Optional[List[str]] = None,
     meal_types: Optional[List[str]] = None,
     diet: Optional[str] = None,
     search: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
+    *,
+    ingredient_ids: Optional[List[int]] = None,
 ):
     fridge_name_set = _get_user_fridge_name_set(db, user_id)
-    recipe_list = get_recipes(db, ingredients, meal_types, diet, search, skip, limit)
+    recipe_list = get_recipes(db, ingredients, meal_types, diet, search, skip, limit, ingredient_ids=ingredient_ids)
 
     availability_summaries = []
 

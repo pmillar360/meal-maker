@@ -20,11 +20,12 @@ const HOME_RANKING_MODE: RecipeRankingMode = 'balanced';
 const GUEST_FRIDGE_STORAGE_KEY = 'meal-maker-local-fridge-items';
 
 export default function Home() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
   const [localFridgeItems, setLocalFridgeItems] = useState<string[]>([]);
+  const [localFridgeLoaded, setLocalFridgeLoaded] = useState(false);
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [availabilityByRecipeId, setAvailabilityByRecipeId] = useState<Record<number, RecipeAvailabilitySummary>>({});
   const [favouriteRecipeIds, setFavouriteRecipeIds] = useState<number[]>([]);
@@ -111,14 +112,16 @@ export default function Home() {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (isLoggedIn || localFridgeItems.length === 0) {
+    if (authLoading || isLoggedIn || localFridgeItems.length === 0) {
       if (!isLoggedIn) {
         setMatchedRecipes([]);
         setAvailabilityByRecipeId({});
+        setMatchingLoading(false);
       }
       return;
     }
 
+    let cancelled = false;
     const loadLocalMatches = async () => {
       setMatchingLoading(true);
       try {
@@ -126,6 +129,7 @@ export default function Home() {
         const recipeDetails = await Promise.all(
           recipes.map((recipe) => getRecipeById(recipe.id).catch(() => null))
         );
+        if (cancelled) return;
 
         const validDetails = recipeDetails.filter((recipe): recipe is Recipe => Boolean(recipe));
         const fridgeSet = new Set(localFridgeItems.map((name) => name.trim().toLowerCase()));
@@ -167,12 +171,13 @@ export default function Home() {
       } catch (error) {
         console.error('Failed to load local fridge matches:', error);
       } finally {
-        setMatchingLoading(false);
+        if (!cancelled) setMatchingLoading(false);
       }
     };
 
     loadLocalMatches();
-  }, [isLoggedIn, localFridgeItems]);
+    return () => { cancelled = true; };
+  }, [authLoading, isLoggedIn, localFridgeItems]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -189,12 +194,30 @@ export default function Home() {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (isLoggedIn) {
+    try {
+      const stored = localStorage.getItem(GUEST_FRIDGE_STORAGE_KEY);
+      const items: unknown = stored ? JSON.parse(stored) : [];
+      if (Array.isArray(items)) {
+        setLocalFridgeItems(items.filter((item): item is string => typeof item === 'string'));
+      }
+    } catch (error) {
+      console.error('Failed to read guest fridge ingredients:', error);
+    } finally {
+      setLocalFridgeLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn || !localFridgeLoaded) {
       return;
     }
 
-    localStorage.setItem(GUEST_FRIDGE_STORAGE_KEY, JSON.stringify(localFridgeItems));
-  }, [isLoggedIn, localFridgeItems]);
+    try {
+      localStorage.setItem(GUEST_FRIDGE_STORAGE_KEY, JSON.stringify(localFridgeItems));
+    } catch (error) {
+      console.error('Failed to save guest fridge ingredients:', error);
+    }
+  }, [isLoggedIn, localFridgeItems, localFridgeLoaded]);
 
   const handleAddFridgeItems = async (items: Ingredient[]) => {
     if (items.length === 0) {

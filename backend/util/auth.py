@@ -15,22 +15,17 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
     
-def create_access_token(data:dict):
-    to_encode = data.copy()
+def create_access_token(auth_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode({"sub": auth_id, "exp": expire, "purpose": "access"}, SECRET_KEY, algorithm=ALGORITHM)
 
-def create_refresh_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def verify_token(token:str):
+def verify_token(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
+        payload = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM],
+            options={"require": ["sub", "exp", "purpose"]},
+        )
+        return payload if payload["purpose"] == "access" else None
     except jwt.InvalidTokenError:
         return None
 
@@ -39,6 +34,3 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
-
-def get_refresh_token_age() -> int:
-    return REFRESH_TOKEN_EXPIRE_DAYS

@@ -3,6 +3,7 @@ import { User } from "./TypeService";
 import axios from "axios";
 
 let accessToken: string | null = null;
+let pendingRefresh: Promise<boolean> | null = null;
 
 interface TokenResponse {
   access_token: string;
@@ -23,7 +24,7 @@ const clearToken = () => {
 
 export const getAccessToken = () => accessToken;
 
-export const refreshAccessToken = async (): Promise<boolean> => {  
+const requestFreshAccessToken = async (): Promise<boolean> => {
   try {
     const response = await api.post<TokenResponse>(
       "/auth/tokens/refresh",
@@ -36,6 +37,15 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     clearToken();
     return false;
   }
+};
+
+export const refreshAccessToken = (): Promise<boolean> => {
+  if (!pendingRefresh) {
+    pendingRefresh = requestFreshAccessToken().finally(() => {
+      pendingRefresh = null;
+    });
+  }
+  return pendingRefresh;
 };
 
 export const registerUser = async (username: string, password: string) => {
@@ -84,6 +94,7 @@ export const getCurrentUser = async (): Promise<User> => {
 };
 
 export const logoutUser = async () => {
+  await pendingRefresh;
   try {
     await api.delete("/auth/tokens/current");
     clearToken();

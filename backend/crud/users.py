@@ -1,168 +1,121 @@
+from datetime import datetime, timezone
+from hashlib import sha256
+from secrets import token_urlsafe
+
 from fastapi import Depends, HTTPException, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
+from sqlalchemy import delete, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app import models
+from app import models, schemas
 from app.database import get_db
-from app.models import User
-from app import schemas
 from util.auth import (
+    REFRESH_TOKEN_EXPIRE_DAYS,
     create_access_token,
-    create_refresh_token,
-    get_refresh_token_age,
     hash_password,
+    oauth2_scheme,
     verify_password,
     verify_token,
-    oauth2_scheme,
 )
 
-def get_user(username: str, db: Session = Depends(get_db)):
-    found_user = (
-        db.query(models.User)
-        .filter(func.lower(models.User.username) == func.lower(username))
-        .first()
-    )
-    return found_user
+REFRESH_TOKEN_MAX_AGE = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
-def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
-    found_user = db.query(models.User).filter(models.User.id == user_id).first()
-    return found_user
 
-def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
-):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-    )
+def get_user(username: str, db: Session):
+    return db.query(models.User).filter(
+        func.lower(models.User.username) == func.lower(username)
+    ).first()
 
-    try:
-        if not token:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
-
-        payload = verify_token(token)
-
-        if not payload:
-            # User passed an expired access token
-            raise credentials_exception
-
-        username = payload.get("sub")
-
-        if not username:
-            raise credentials_exception
-
-        return get_user(username, db)
-    except HTTPException as e:
-        raise e
 
 def get_current_active_user(
-    current_user: User = Depends(get_current_user),
-):
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme),
+) -> models.User:
+    payload = verify_token(token)
+    user = db.query(models.User).filter_by(auth_id=payload["sub"]).first() if payload else None
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+    return user
 
-def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    # Check if user already exists
-    existing_user = (
-        db.query(models.User).filter(models.User.username == user_data.username).first()
-    )
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
-        )
 
-    hashed_pwd = hash_password(user_data.password)
-    new_user = models.User(username=user_data.username, hashed_password=hashed_pwd)
+def _refresh_token_hash(token: str) -> str:
+    return sha256(token.encode("utf-8")).hexdigest()
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
 
-    access_token = create_access_token({"sub": new_user.username})
-    refresh_token = create_refresh_token({"sub": new_user.username})
-
+def _issue_tokens(
+    db: Session, user: models.User, status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    token = token_urlsafe(32)
     response = JSONResponse(
-        {"access_token": access_token, "token_type": "bearer"},
-        status_code=status.HTTP_201_CREATED,
+        {"access_token": create_access_token(user.auth_id), "token_type": "bearer"},
+        status_code=status_code,
     )
+    response.headers["Cache-Control"] = "no-store"
     response.set_cookie(
         key="refresh_token",
-        value=refresh_token,
+        value=token,
         httponly=True,
         secure=True,
         samesite="strict",
-        max_age=get_refresh_token_age() * 24 * 60 * 60,
+        max_age=REFRESH_TOKEN_MAX_AGE,
     )
-
+    db.add(models.RefreshSession(
+        token_hash=_refresh_token_hash(token),
+        user_auth_id=user.auth_id,
+        expires_at=int(datetime.now(timezone.utc).timestamp()) + REFRESH_TOKEN_MAX_AGE,
+    ))
+    db.commit()
     return response
 
-def refresh_token(refresh_token: str):
-    payload = verify_token(refresh_token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
-        )
 
-    username = payload.get("sub")
-    if not username:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload"
-        )
+def register_user(user_data: schemas.UserCreate, db: Session):
+    if get_user(user_data.username, db):
+        raise HTTPException(status_code=400, detail="Username already taken")
 
-    new_access_token = create_access_token({"sub": username})
-    new_refresh_token = create_refresh_token({"sub": username})
+    user = models.User(username=user_data.username, hashed_password=hash_password(user_data.password))
+    db.add(user)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        if get_user(user_data.username, db):
+            raise HTTPException(status_code=400, detail="Username already taken")
+        raise
 
-    response = JSONResponse({"access_token": new_access_token, "token_type": "bearer"})
+    return _issue_tokens(db, user, status.HTTP_201_CREATED)
 
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=get_refresh_token_age() * 24 * 60 * 60,
-    )
 
-    return response
-
-def login(form_data: schemas.LoginRequest, db: Session = Depends(get_db)):
-    """Log in a user and return access and refresh tokens"""
-    user = (
-        db.query(models.User).filter(models.User.username == form_data.username).first()
-    )
-
-    if not user or not verify_password(form_data.password, str(user.hashed_password)):
+def login(form_data: schemas.LoginRequest, db: Session):
+    user = get_user(form_data.username, db)
+    if not user or not user.is_active or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid username or password")
 
-    token_data = {"sub": user.username}
+    db.execute(delete(models.RefreshSession).where(
+        models.RefreshSession.expires_at <= int(datetime.now(timezone.utc).timestamp())
+    ))
+    return _issue_tokens(db, user)
 
-    access_token = create_access_token(data=token_data)
-    refresh_token = create_refresh_token(data=token_data)
 
-    response = JSONResponse({"access_token": access_token, "token_type": "bearer"})
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=get_refresh_token_age() * 24 * 60 * 60,
-    )
-
-    return response
-
-def get_current_user_by_token(token: str):
-    if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    payload = verify_token(token)
-
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
+def refresh_token(token: str, db: Session):
+    # Consume the old token atomically so concurrent requests cannot both rotate it.
+    auth_id = db.execute(
+        delete(models.RefreshSession)
+        .where(
+            models.RefreshSession.token_hash == _refresh_token_hash(token),
+            models.RefreshSession.expires_at > int(datetime.now(timezone.utc).timestamp()),
         )
+        .returning(models.RefreshSession.user_auth_id)
+    ).scalar_one_or_none()
+    user = db.query(models.User).filter_by(auth_id=auth_id).first() if auth_id else None
+    if not user or not user.is_active:
+        db.commit()
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
-    return {"username": payload["sub"]}
+    return _issue_tokens(db, user)
+
+
+def revoke_refresh_token(token: str, db: Session):
+    db.execute(delete(models.RefreshSession).where(
+        models.RefreshSession.token_hash == _refresh_token_hash(token)
+    ))
+    db.commit()

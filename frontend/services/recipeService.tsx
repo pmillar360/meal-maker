@@ -26,11 +26,7 @@ export const getRecipes = async (
   ): Promise<Recipe[]> => {
     const { ingredients, mealTypes: mealType, diet, search } = filters;
     let queryParams = new URLSearchParams();
-    if (ingredients && ingredients.length > 0)
-      queryParams.append(
-        "ingredients",
-        ingredients.map((x) => x.name).toString()
-      );
+    ingredients?.forEach(({ id }) => queryParams.append("ingredient_ids", String(id)));
     if (mealType && mealType.length > 0)
       queryParams.append(
         "meal_types",
@@ -48,12 +44,7 @@ export const getRecipesWithFridgeAvailability = async (
   const { ingredients, mealTypes: mealType, diet, search } = filters;
   const queryParams = new URLSearchParams();
 
-  if (ingredients && ingredients.length > 0) {
-    queryParams.append(
-      "ingredients",
-      ingredients.map((x) => x.name).toString()
-    );
-  }
+  ingredients?.forEach(({ id }) => queryParams.append("ingredient_ids", String(id)));
 
   if (mealType && mealType.length > 0) {
     queryParams.append(

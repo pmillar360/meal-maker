@@ -31,7 +31,7 @@ vi.mock('../services/fridgeService', () => ({
   getFridgeIngredients: mocks.getFridgeIngredients,
 }));
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ isLoggedIn: false }),
+  useAuth: () => ({ isLoggedIn: false, isLoading: false }),
 }));
 vi.mock('../context/ToastContext', () => ({
   useToast: () => ({ addToast: mocks.addToast }),
@@ -57,5 +57,21 @@ describe('home ingredient matching workflow', () => {
     await waitFor(() => expect(mocks.getRecipesByIngredients).toHaveBeenCalledWith(['Tomato'], 9));
     expect(await screen.findByRole('heading', { name: 'Tomato Pasta' })).toBeInTheDocument();
     expect(screen.getByText('1/2 ingredients available')).toBeInTheDocument();
+  });
+
+  it('restores a guest fridge on remount and persists removals', async () => {
+    const key = 'meal-maker-local-fridge-items';
+    localStorage.setItem(key, JSON.stringify(['Tomato']));
+    const user = userEvent.setup();
+    const first = render(<Home />);
+
+    expect(await screen.findByRole('button', { name: /^Tomato/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Tomato Pasta' })).toBeInTheDocument();
+    first.unmount();
+
+    render(<Home />);
+    await user.click(await screen.findByRole('button', { name: /^Tomato/ }));
+    expect(screen.queryByRole('button', { name: /^Tomato/ })).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(key)!)).toEqual([]);
   });
 });

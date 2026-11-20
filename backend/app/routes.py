@@ -30,7 +30,8 @@ def health_check():
 # Recipe Endpoints
 @router.get("/recipes/", response_model=List[schemas.Recipe])
 def get_recipes(
-    ingredients: Optional[str] = Query(None, description="Comma separated list of ingredients"),
+    ingredients: Optional[str] = Query(None, description="Require all comma-separated ingredient names"),
+    ingredient_ids: Optional[List[int]] = Query(None, description="Require all selected ingredient IDs"),
     meal_types: Optional[str] = Query(
         None,
         description="Comma separated list of meal types (breakfast, lunch, dinner, snack)",
@@ -44,12 +45,15 @@ def get_recipes(
     """Get recipes with optional filtering by ingredients, meal type, and dietary restrictions"""
     ingredient_list = ingredients.split(",") if ingredients else []
     meal_type_list = meal_types.split(",") if meal_types else []
-    return recipes.get_recipes(db, ingredient_list, meal_type_list, diet, search, skip, limit)
+    return recipes.get_recipes(
+        db, ingredient_list, meal_type_list, diet, search, skip, limit, ingredient_ids=ingredient_ids,
+    )
 
 
 @router.get("/recipes/with-fridge-availability/", response_model=List[schemas.RecipeAvailabilitySummary])
 def get_recipes_with_fridge_availability(
-    ingredients: Optional[str] = Query(None, description="Comma separated list of ingredients"),
+    ingredients: Optional[str] = Query(None, description="Require all comma-separated ingredient names"),
+    ingredient_ids: Optional[List[int]] = Query(None, description="Require all selected ingredient IDs"),
     meal_types: Optional[str] = Query(
         None,
         description="Comma separated list of meal types (breakfast, lunch, dinner, snack)",
@@ -63,7 +67,9 @@ def get_recipes_with_fridge_availability(
 ):
     ingredient_list = ingredients.split(",") if ingredients else []
     meal_type_list = meal_types.split(",") if meal_types else []
-    return recipes.get_recipes_with_fridge_availability(db, user.id, ingredient_list, meal_type_list, diet, search, skip, limit)
+    return recipes.get_recipes_with_fridge_availability(
+        db, user.id, ingredient_list, meal_type_list, diet, search, skip, limit, ingredient_ids=ingredient_ids,
+    )
 
 
 @router.get("/recipes/{recipe_id}", response_model=schemas.RecipeDetail)
@@ -186,13 +192,6 @@ def delete_shopping_list_item(
 
 
 # Auth Helper Functions
-def _refresh_access_token_from_cookie(request: Request):
-    refresh_token = request.cookies.get("refresh_token")
-    if not refresh_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
-    return users.refresh_token(refresh_token)
-
-
 def _clear_auth_cookies(response: Response):
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
@@ -221,14 +220,20 @@ def create_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/auth/tokens/refresh", response_model=schemas.TokenResponse)
-def refresh_auth_token(request: Request):
+def refresh_auth_token(request: Request, db: Session = Depends(get_db)):
     """Issue a new access token and rotate the refresh token cookie."""
-    return _refresh_access_token_from_cookie(request)
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
+    return users.refresh_token(refresh_token, db)
 
 
 @router.delete("/auth/tokens/current", status_code=status.HTTP_204_NO_CONTENT)
-def delete_current_auth_token(response: Response):
-    """Delete auth cookies for the current session."""
+def delete_current_auth_token(request: Request, response: Response, db: Session = Depends(get_db)):
+    """Revoke the current refresh token and clear auth cookies."""
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        users.revoke_refresh_token(refresh_token, db)
     _clear_auth_cookies(response)
     return None
 
