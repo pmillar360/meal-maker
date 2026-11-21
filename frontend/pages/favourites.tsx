@@ -22,7 +22,7 @@ export default function Favourites() {
             <ul>
                 {favourites.map((recipe) => (
                     <li key={recipe.id}>
-                        <RecipeCard recipe={recipe} />
+                        <RecipeCard recipe={recipe} favouriteRecipeIds={[recipe.id]} />
                     </li>
                 ))}
             </ul>

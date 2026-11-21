@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 export type Option = {
   id: number;
   label: string;
+  aliases?: string[];
 };
 
 type Props = {
@@ -29,7 +30,7 @@ export default function MultiSelectAutoComplete({
 
   const filtered = options.filter(
     (opt) =>
-      opt.label.toLowerCase().includes(input.toLowerCase()) &&
+      [opt.label, ...(opt.aliases ?? [])].some(label => label.toLowerCase().includes(input.trim().toLowerCase())) &&
       !selectedOptions.some((s) => s.id === opt.id)
   ).sort((a, b) => a.id - b.id);
 

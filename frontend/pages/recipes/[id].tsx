@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Image from 'next/image';
+import RecipeImage from '../../components/RecipeImage';
 import { addShoppingListItem } from '../../services/ShoppingListService';
 import { RecipeIngredient, RecipeIngredientAvailability } from '../../services/TypeService';
 import { Recipe } from '../../services/TypeService';
@@ -38,11 +38,14 @@ export default function RecipeDetail() {
 
     useEffect(() => {
         if (!id) return;
+        let active = true;
+        setAddedItems([]);
         const fetchRecipe = async () => {
             setLoading(true);
             try {
                 if (isLoggedIn) {
                     const availability = await getRecipeAvailabilityById(id);
+                    if (!active) return;
                     setRecipe(availability.recipe);
                     setMissingIngredientCount(availability.missing_ingredients);
                     const nextStatuses: Record<number, RecipeIngredientAvailability> = {};
@@ -52,27 +55,30 @@ export default function RecipeDetail() {
                     setIngredientStatuses(nextStatuses);
                 } else {
                     const data = await getRecipeById(id);
+                    if (!active) return;
                     setRecipe(data);
                     setMissingIngredientCount(0);
                     setIngredientStatuses({});
                 }
                 setError(null);
             } catch (err) {
+                if (!active) return;
                 console.error("Error fetching recipe:", err);
                 setError("Failed to load recipe details");
             } finally {
-                setLoading(false);
+                if (active) setLoading(false);
             }
         };
         fetchRecipe();
+        return () => { active = false; };
     }, [id, isLoggedIn]);
 
     const handleAddToShoppingList = async (ingredient: RecipeIngredient) => {
-        if (addedItems.includes(ingredient.ingredient.id)) return;
+        if (addedItems.includes(ingredient.id ?? ingredient.ingredient.id)) return;
         setAddingToList(true);
         try {
-            await addShoppingListItem({ name: ingredient.ingredient.name, quantity: ingredient.quantity + " " + ingredient.unit });
-            setAddedItems(prev => [...prev, ingredient.ingredient.id]);
+            await addShoppingListItem({ name: ingredient.ingredient.name, quantity: ingredient.amount ?? [ingredient.quantity, ingredient.unit].filter(Boolean).join(" ") });
+            setAddedItems(prev => [...prev, ingredient.id ?? ingredient.ingredient.id]);
             addToast(toastCopy.shoppingList.added(ingredient.ingredient.name), 'success');
         } catch (error) {
             console.error("Error adding to shopping list:", error);
@@ -97,9 +103,9 @@ export default function RecipeDetail() {
                 setAddedItems((prev) => [
                     ...new Set([
                         ...prev,
-                        ...result.created_items
-                            .map((item) => recipe?.recipe_ingredients?.find((ri) => ri.ingredient.name === item.name)?.ingredient.id)
-                            .filter((value): value is number => typeof value === 'number'),
+                        ...(recipe?.recipe_ingredients ?? [])
+                            .filter(line => result.created_items.some(item => item.name === line.ingredient.name))
+                            .map(line => line.id ?? line.ingredient.id),
                     ]),
                 ]);
                 setMissingIngredientCount((prev) => Math.max(0, prev - result.created_count));
@@ -140,23 +146,24 @@ export default function RecipeDetail() {
                     <h1 className="text-3xl font-bold ml-4">{recipe.title}</h1>
                 </div>
                 <div className="relative h-56 w-full overflow-hidden rounded-lg">
-                    <Image alt={recipe.title} src={recipe.image_url} fill className="object-cover" unoptimized />
+                    <RecipeImage src={recipe.image_url} title={recipe.title} />
                 </div>
-                <div className='bg-white rounded-lg shadow-md gap-4 p-6 mb-8'>
-                    <h2 className='text-xl font-semibold mb-4'>Description</h2>
-                    <p>{descriptionText(recipe.description)}</p>
-                </div>
+                {(recipe.description || recipe.source_url) && <div className='bg-white rounded-lg shadow-md gap-4 p-6 mb-8'>
+                    {recipe.description && <h2 className='text-xl font-semibold mb-4'>Description</h2>}
+                    {recipe.source_url && <a className="underline" href={recipe.source_url}>Original recipe</a>}
+                    <p>{recipe.provider ? recipe.description : descriptionText(recipe.description ?? '')}</p>
+                </div>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold mb-4">Details</h2>
-                        <div className="flex items-center text-gray-700 mb-2">
+                        {recipe.cooking_time != null && <div className="flex items-center text-gray-700 mb-2">
                             <FaClock className="h-5 w-5 mr-2" />
                             <span>{recipe.cooking_time} minutes</span>
-                        </div>
-                        <div className="flex items-center text-gray-700 mb-2">
+                        </div>}
+                        {recipe.servings != null && <div className="flex items-center text-gray-700 mb-2">
                             <FaUtensils className="h-5 w-5 mr-2" />
                             <span>Servings: {recipe.servings}</span>
-                        </div>
+                        </div>}
                         <div className="flex items-center text-gray-700">
                             <FaList className="h-5 w-5 mr-2" />
                             <span>Meal Type: {mealTypeNames.length > 0 ? mealTypeNames.join(', ') : 'Not specified'}</span>
@@ -192,7 +199,7 @@ export default function RecipeDetail() {
                     </div>
                     {recipe.recipe_ingredients && recipe.recipe_ingredients.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="w-full table-fixed border-collapse">
+                            <table className="w-full min-w-[40rem] border-collapse">
                                 <thead>
                                     <tr className="text-left text-sm text-gray-500 border-b">
                                         <th className="py-2 pr-4 font-medium">Ingredient</th>
@@ -203,9 +210,9 @@ export default function RecipeDetail() {
                                 </thead>
                                 <tbody>
                                     {recipe.recipe_ingredients.map(ingredient => (
-                                        <tr key={ingredient.ingredient.id} className="border-b last:border-b-0">
-                                            <td className="py-3 pr-4 text-gray-700 wrap-break-word">{ingredient.ingredient.name}</td>
-                                            <td className="py-3 px-4 text-center whitespace-nowrap text-gray-700">{ingredient.quantity} {ingredient.unit}</td>
+                                        <tr key={ingredient.id ?? ingredient.ingredient.id} className="border-b last:border-b-0">
+                                            <td className="py-3 pr-4 text-gray-700 wrap-break-word">{ingredient.ingredient.name}{ingredient.preparation && <small className="block">{ingredient.preparation}</small>}</td>
+                                            <td className="py-3 px-4 text-center whitespace-nowrap text-gray-700">{ingredient.amount ?? [ingredient.quantity, ingredient.unit].filter(Boolean).join(' ')}</td>
                                             <td className="py-3 px-4 text-center whitespace-nowrap">
                                                 {isLoggedIn && ingredientStatuses[ingredient.ingredient.id] ? (
                                                     ingredientStatuses[ingredient.ingredient.id].has_in_fridge ? (
@@ -220,12 +227,12 @@ export default function RecipeDetail() {
                                             <td className="py-3 pl-4 text-center">
                                                 <button
                                                     onClick={() => handleAddToShoppingList(ingredient)}
-                                                    className={`min-w-44 px-3 py-1 rounded-lg text-white focus:outline-hidden ${addedItems.includes(ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
+                                                    className={`min-w-44 px-3 py-1 rounded-lg text-white focus:outline-hidden ${addedItems.includes(ingredient.id ?? ingredient.ingredient.id) ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'
                                                         }`}
                                                     disabled={addingToList}
                                                 >
-                                                    {addedItems.includes(ingredient.ingredient.id) ? <FaCheck className="inline-block mr-1" /> : null}
-                                                    {addingToList && addedItems.includes(ingredient.ingredient.id) ? 'Adding...' : 'Add to Shopping List'}
+                                                    {addedItems.includes(ingredient.id ?? ingredient.ingredient.id) ? <FaCheck className="inline-block mr-1" /> : null}
+                                                    {addingToList && addedItems.includes(ingredient.id ?? ingredient.ingredient.id) ? 'Adding...' : 'Add to Shopping List'}
                                                 </button>
                                             </td>
                                         </tr>
@@ -240,12 +247,15 @@ export default function RecipeDetail() {
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold mb-4">Instructions</h2>
                     <div className="prose max-w-none">
-                {recipe.instructions ? (
-                    <ol className="list-decimal list-inside">
-                        {recipe.instructions.split('\n').map((step, idx) => (
-                            <li key={idx} className="mb-2">{step}</li>
-                        ))}
-                    </ol>
+                {recipe.instruction_sections?.length || recipe.instructions ? (
+                    (recipe.instruction_sections ?? [{ name: '', steps: recipe.instructions?.split('\n') ?? [] }]).map((section, index) => (
+                        <div key={index}>
+                            {section.name && <h3 className="font-semibold">{section.name}</h3>}
+                            <ol className="list-decimal list-inside">
+                                {section.steps.map((step, i) => <li key={i} className="mb-2">{step}</li>)}
+                            </ol>
+                        </div>
+                    ))
                 ) : (
                     <p className="text-gray-500">No instructions found for this recipe.</p>
                 )}

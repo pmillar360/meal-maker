@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import List, Optional
 from datetime import datetime
+from util.recipe_normalization import plain_text
 # Schemas are for frontend <-> backend communication
 
 class DietBase(BaseModel):
@@ -24,6 +25,7 @@ class IngredientBase(BaseModel):
     category: Optional[str] = None
 
 class Ingredient(IngredientBase):
+    aliases: list[str] = []
     id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -34,10 +36,20 @@ class RecipeIngredientBase(BaseModel):
 
 class RecipeIngredient(RecipeIngredientBase):
     ingredient: Ingredient
+    id: int
+    original: Optional[str] = None
+    preparation: Optional[str] = None
+    amount: str
 
     model_config = ConfigDict(from_attributes=True)
 
+class InstructionSection(BaseModel):
+    name: str
+    steps: list[str]
+
 class RecipeBase(BaseModel):
+    cooking_time: Optional[int] = None
+    servings: Optional[int] = None
     title: str
     meal_types: Optional[List[MealType]] = []
     diets: Optional[List[Diet]] = []
@@ -54,9 +66,15 @@ class RecipeDetail(RecipeBase):
     id: int
     instructions: Optional[str] = None
     recipe_ingredients: List[RecipeIngredient] = []
-    cooking_time: Optional[int] = None
-    servings: Optional[int] = None
+    instruction_sections: list[InstructionSection] = []
+    provider: Optional[str] = None
+    source_url: Optional[str] = None
     description: Optional[str] = None
+
+    @field_validator("description")
+    @classmethod
+    def readable_description(cls, value):
+        return plain_text(value) if value and "<" in value else value
 
     model_config = ConfigDict(from_attributes=True)
 

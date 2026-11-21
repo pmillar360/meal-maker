@@ -1,7 +1,9 @@
 import datetime
 from uuid import uuid4
 from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Index, Integer, String, Text, Table, DateTime, UniqueConstraint, func
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import JSON
+from util.recipe_normalization import ALIASES, ingredient_key, display_amount, instruction_sections
+from sqlalchemy.orm import validates, relationship, Mapped, mapped_column
 
 from .database import Base
 # Models are for DB <-> Backend communication
@@ -10,10 +12,22 @@ from .database import Base
 # Association table for recipes and ingredients
 class RecipeIngredient(Base):
     __tablename__ = "recipe_ingredient"
-    recipe_id = mapped_column(Integer, ForeignKey("recipes.id"), primary_key=True)
-    ingredient_id = mapped_column(Integer, ForeignKey("ingredients.id"), primary_key=True)
+    id = mapped_column(Integer, primary_key=True)
+    recipe_id = mapped_column(Integer, ForeignKey("recipes.id"), nullable=False, index=True)
+    ingredient_id = mapped_column(Integer, ForeignKey("ingredients.id"), nullable=False)
+    position = mapped_column(Integer, default=0, nullable=False)
+    original = mapped_column(Text)
+    preparation = mapped_column(Text)
     quantity = mapped_column(String)
     unit = mapped_column(String)
+    metric_quantity = mapped_column(String)
+    metric_unit = mapped_column(String)
+
+    @property
+    def amount(self):
+        if self.metric_quantity is not None:
+            return display_amount(self.metric_quantity, self.metric_unit)
+        return display_amount(self.quantity, self.unit)
 
     recipe = relationship("Recipe", back_populates="recipe_ingredients")
     ingredient = relationship("Ingredient", back_populates="ingredient_recipes")
@@ -83,12 +97,21 @@ class Recipe(Base):
     last_updated: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    # Spoonacular
+    provider = mapped_column(String)
+    external_id = mapped_column(String)
+    source_url = mapped_column(String)
+    sections = mapped_column(JSON)
+    __table_args__ = (UniqueConstraint("provider", "external_id", name="uq_recipe_source"),)
+
+    @property
+    def instruction_sections(self):
+        return self.sections if self.sections is not None else instruction_sections(self.instructions)
+
     spoonacular_id = mapped_column(Integer, unique=True, index=True)
     
     # Relationships
     user = relationship("User", back_populates="recipes")
-    recipe_ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
+    recipe_ingredients = relationship("RecipeIngredient", order_by="(RecipeIngredient.position, RecipeIngredient.id)", back_populates="recipe", cascade="all, delete-orphan")
     meal_types = relationship("MealType", secondary=recipe_meal_type, back_populates="recipes")
     diets = relationship("Diet", secondary=recipe_diet, back_populates="recipes")
     favourited_by = relationship("FavouriteRecipe", back_populates="recipe")
@@ -98,12 +121,30 @@ class Ingredient(Base):
 
     id = mapped_column(Integer, primary_key=True, index=True)
     name = mapped_column(String, index=True, unique=True)
+    lookup_key = mapped_column(String, nullable=False, unique=True)
+
+    @property
+    def aliases(self):
+        return [key for key, value in ALIASES.items() if value == self.lookup_key] + [self.lookup_key]
+
+    @validates("name")
+    def set_lookup_key(self, key, name):
+        self.lookup_key = ingredient_key(name)
+        return name
+
     category = mapped_column(String, index=True)
 
     spoonacular_id = mapped_column(Integer, unique=True, index=True)
     
     # Relationships
     ingredient_recipes = relationship("RecipeIngredient", back_populates="ingredient", cascade="all, delete-orphan")
+
+class IngredientSource(Base):
+    __tablename__ = "ingredient_sources"
+    provider = mapped_column(String, primary_key=True)
+    external_id = mapped_column(String, primary_key=True)
+    ingredient_id = mapped_column(Integer, ForeignKey("ingredients.id"), nullable=False)
+
 
 class Diet(Base):
     __tablename__ = "diets"

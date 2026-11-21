@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import RecipeImage from './RecipeImage';
 import Link from 'next/link';
 import { FiClock, FiUsers } from 'react-icons/fi';
 import { Recipe, RecipeAvailabilitySummary } from '../services/TypeService';
@@ -18,13 +18,14 @@ interface RecipeCardProps {
 export default function RecipeCard({ recipe, favouriteRecipeIds = [], availability }: RecipeCardProps) {
   const { isLoggedIn } = useAuth();
   const { addToast } = useToast();
-  const [isFavourite, setIsFavourite] = useState(recipe.isFavourite || favouriteRecipeIds.includes(recipe.id));
+  const initiallyFavourite = Boolean(recipe.isFavourite || favouriteRecipeIds.includes(recipe.id));
+  const [isFavourite, setIsFavourite] = useState(initiallyFavourite);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Update isFavourite based on the favouriteRecipeIds prop
-    setIsFavourite(favouriteRecipeIds.includes(recipe.id));
-  }, [favouriteRecipeIds, recipe.id]);
+    setIsFavourite(initiallyFavourite);
+  }, [initiallyFavourite, recipe.id]);
 
   const handleFavouriteClick = async (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -58,13 +59,7 @@ export default function RecipeCard({ recipe, favouriteRecipeIds = [], availabili
     <Link href={`/recipes/${recipe.id}`}>
       <div className="card hover:shadow-lg transition-shadow duration-300 cursor-pointer">
         <div className="relative h-40 bg-gray-200">
-          <Image
-            src={recipe.image_url}
-            alt={recipe.title}
-            fill
-            unoptimized
-            className="object-cover"
-          />
+          <RecipeImage src={recipe.image_url} title={recipe.title} />
         </div>
         <div className="p-4">
           <div className='flex justify-between'>

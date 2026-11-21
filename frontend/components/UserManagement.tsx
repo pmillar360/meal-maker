@@ -50,18 +50,18 @@ export default function UserManagement() {
         <div className='flex'>
             {!isLoggedIn && (
                 <div>
-                    <form className='flex' onSubmit={handleLogin}>
-                        <input type='text' className='form-input md:flex-row m-3' value={username} placeholder='Username' onChange={(e) => setUsername(e.target.value)}></input>
-                        <input type='password' className='form-input md:flex-row m-3' value={password} placeholder='Password' onChange={(e) => setPassword(e.target.value)}></input>
-                        <button type='submit' className='btn btn-primary m-3 text-white hover:bg-opacity-90'>Login</button>
-                        <button type='button' className='btn btn-primary m-3 text-white hover:bg-opacity-90' onClick={handleRegistration}>Register</button>
+                    <form className='flex flex-wrap items-center gap-2' onSubmit={handleLogin}>
+                        <input type='text' className='form-input w-32 min-w-0 sm:w-40' value={username} placeholder='Username' onChange={(e) => setUsername(e.target.value)}></input>
+                        <input type='password' className='form-input w-32 min-w-0 sm:w-40' value={password} placeholder='Password' onChange={(e) => setPassword(e.target.value)}></input>
+                        <button type='submit' className='btn btn-primary my-1 text-white hover:bg-opacity-90'>Login</button>
+                        <button type='button' className='btn btn-primary my-1 text-white hover:bg-opacity-90' onClick={handleRegistration}>Register</button>
                     </form>
                 </div>
             )}
             {isLoggedIn && (
                 <div className='flex'>
                     <p className='inline-flex  items-center border-primary text-gray-900 m-3'>{user?.username}</p>
-                    <button className='btn btn-primary m-3 text-white hover:bg-opacity-90' onClick={handleLogout}>Log Out</button>
+                    <button className='btn btn-primary my-1 text-white hover:bg-opacity-90' onClick={handleLogout}>Log Out</button>
                 </div>)}
         </div>
     )

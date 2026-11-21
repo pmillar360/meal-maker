@@ -41,7 +41,7 @@ export default function Home() {
     () =>
       activeFridgeNames.map((name, index) => {
         const matchedIngredient = ingredients.find(
-          (ingredient) => ingredient.name.toLowerCase() === name.toLowerCase()
+          (ingredient) => [ingredient.name, ...(ingredient.aliases ?? [])].some(alias => alias.toLowerCase() === name.trim().toLowerCase())
         );
 
         return {
@@ -136,20 +136,20 @@ export default function Home() {
         const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
 
         validDetails.forEach((recipe) => {
-          const total = recipe.recipe_ingredients?.length || 0;
-          const available = (recipe.recipe_ingredients || []).filter((item) =>
-            fridgeSet.has(item.ingredient.name.trim().toLowerCase())
-          ).length;
-          const missing = total - available;
+          const ingredients = new Map(recipe.recipe_ingredients?.map(({ ingredient }) => [ingredient.id, ingredient]));
+          const missingNames = [...ingredients.values()].filter(ingredient =>
+            ![ingredient.name, ...(ingredient.aliases ?? [])].some(name => fridgeSet.has(name.trim().toLowerCase()))
+          ).map(ingredient => ingredient.name);
+          const total = ingredients.size;
+          const missing = missingNames.length;
+          const available = total - missing;
 
           nextAvailabilityMap[recipe.id] = {
             recipe,
             total_ingredients: total,
             available_ingredients: available,
             missing_ingredients: missing,
-            missing_ingredient_names: (recipe.recipe_ingredients || [])
-              .filter((item) => !fridgeSet.has(item.ingredient.name.trim().toLowerCase()))
-              .map((item) => item.ingredient.name),
+            missing_ingredient_names: missingNames,
           };
         });
 

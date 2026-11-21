@@ -35,7 +35,7 @@ Implementation flow is organized as route handlers in the backend app layer, dat
 
 ### Prerequisites
 
-- Node.js 14+
+- Node.js 26.13.1
 - Python 3.13+
 - uv (Python package/project manager)
 - Docker Desktop running Linux containers for the local PostgreSQL database

@@ -1,3 +1,5 @@
+from collections import defaultdict
+from util.recipe_normalization import measurement, format_measure
 from sqlalchemy.orm import Session
 from app import models, schemas
 
@@ -39,9 +41,23 @@ def add_recipe_ingredients_to_shopping_list(db: Session, user_id: int, missing_r
     """Create shopping list items from missing recipe ingredients for a user."""
     created_items = []
 
-    for recipe_ingredient in missing_recipe_ingredients:
-        quantity_parts = [part for part in [recipe_ingredient.quantity, recipe_ingredient.unit] if part]
-        quantity_text = " ".join(quantity_parts) if quantity_parts else None
+    grouped = defaultdict(list)
+    for line in missing_recipe_ingredients:
+        grouped[line.ingredient_id].append(line)
+
+    for lines in grouped.values():
+        recipe_ingredient = lines[0]
+        totals = {}
+        descriptions = []
+        for line in lines:
+            parsed = measurement(line.metric_quantity or line.quantity, line.metric_unit or line.unit)
+            if parsed and len(parsed[0]) == 1:
+                values, unit = parsed
+                totals[unit] = totals.get(unit, 0) + values[0]
+            elif line.amount:
+                descriptions.append(line.amount)
+        amounts = [format_measure([total], unit) for unit, total in totals.items()]
+        quantity_text = " + ".join(amounts + descriptions) or None
 
         db_item = models.ShoppingListItem(
             user_id=user_id,

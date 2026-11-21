@@ -6,13 +6,14 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
-from crud.ingredients import create_local_ingredients_from_spoonacular_recipe
+from crud.recipe_import import save_import, spoonacular_recipe, ImportedRecipe
+from util.recipe_normalization import ingredient_key, instruction_sections
 from util.logger import log
 from util.spoonacular import get_external_recipe_by_id, get_random_recipes, get_recipe_instructions, get_recipes_by_ingredients as get_recipes_by_ingredients_external
 
 
 def _normalize_ingredient_name(name: str) -> str:
-    return (name or "").strip().lower()
+    return ingredient_key(name or "")
 
 
 def _normalized_ingredient_names(ingredients: List[str]) -> set[str]:
@@ -32,7 +33,11 @@ def _build_ingredient_statuses(recipe: models.Recipe, fridge_name_set: set[str])
     ingredient_statuses = []
     missing_recipe_ingredients = []
 
+    seen = set()
     for recipe_ingredient in recipe.recipe_ingredients:
+        if recipe_ingredient.ingredient_id in seen:
+            continue
+        seen.add(recipe_ingredient.ingredient_id)
         ingredient_name = _normalize_ingredient_name(recipe_ingredient.ingredient.name)
         has_in_fridge = ingredient_name in fridge_name_set
 
@@ -65,26 +70,22 @@ def get_recipe_by_id(db: Session, recipe_id: int):
             log(f"Spoonacular recipe refresh failed: {type(error).__name__}", level=30)
             return recipe
 
-        # If recipe cannot be found via API return not found
-        if external_data is None:
-            raise HTTPException(status_code=404, detail="Recipe not found")
-
-        recipe = create_local_recipe_from_spoonacular(db, external_data)
+        if external_data:
+            try:
+                recipe = create_local_recipe_from_spoonacular(db, external_data)
+            except (ValueError, KeyError, TypeError) as error:
+                log(f"Invalid Spoonacular refresh: {type(error).__name__}", level=30)
+                return recipe
 
     if recipe.spoonacular_id is not None and recipe.instructions is None:
         try:
-            instruction_sections = get_recipe_instructions(recipe.spoonacular_id)
+            sections = get_recipe_instructions(recipe.spoonacular_id)
         except RequestException as error:
             log(f"Spoonacular instructions request failed: {type(error).__name__}", level=30)
             return recipe
-        recipe.instructions = "\n".join(
-            step["step"]
-            for section in instruction_sections
-            for step in section.get("steps", [])
-        )
-        db.commit()
-        db.refresh(recipe)
-    
+        recipe = save_import(db, ImportedRecipe(provider="spoonacular", external_id=str(recipe.spoonacular_id),
+                                                 title=recipe.title, sections=instruction_sections(sections)))
+
     return recipe
 
 def get_recipes(
@@ -127,7 +128,7 @@ def get_recipes(
         ))
     for name in _normalized_ingredient_names(ingredients or []):
         query = query.filter(models.Recipe.recipe_ingredients.any(
-            models.RecipeIngredient.ingredient.has(func.lower(models.Ingredient.name) == name)
+            models.RecipeIngredient.ingredient.has(models.Ingredient.lookup_key == name)
         ))
     
     return query.offset(skip).limit(limit).all()
@@ -190,7 +191,7 @@ def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[st
     names = _normalized_ingredient_names(ingredient_names)
     if names:
         query = query.filter(models.Recipe.recipe_ingredients.any(
-            models.RecipeIngredient.ingredient.has(func.lower(models.Ingredient.name).in_(names))
+            models.RecipeIngredient.ingredient.has(models.Ingredient.lookup_key.in_(names))
         ))
     recipes = query.limit(number).all()
 
@@ -270,94 +271,12 @@ def get_missing_recipe_ingredients_for_user(db: Session, user_id: int, recipe_id
     recipe = get_recipe_by_id(db, recipe_id)
     fridge_name_set = _get_user_fridge_name_set(db, user_id)
     _, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_name_set)
-    return missing_recipe_ingredients
+    missing_ids = {line.ingredient_id for line in missing_recipe_ingredients}
+    return [line for line in recipe.recipe_ingredients if line.ingredient_id in missing_ids]
 
-def create_local_recipe_from_spoonacular(db: Session, data: dict, is_featured_new: bool = False):
-    """Given an external object, convert to local db model"""
-    recipe = (
-        db.query(models.Recipe)
-        .filter(models.Recipe.spoonacular_id == data["id"])
-        .first()
-    )
+def create_local_recipe_from_spoonacular(db: Session, data: dict, is_featured_new=None):
+    return save_import(db, spoonacular_recipe(data), is_featured_new)
 
-    if recipe:
-        recipe.title = data["title"]
-        recipe.image_url = data["image"]
-        recipe.description = data["summary"]
-        recipe.servings = data["servings"]
-        recipe.cooking_time = data["readyInMinutes"]
-        recipe.is_featured = is_featured_new
-
-    else:
-        recipe = models.Recipe(
-            title=data["title"],
-            image_url=data["image"],
-            description=data["summary"],
-            servings=data["servings"],
-            spoonacular_id=data["id"],
-            cooking_time=data["readyInMinutes"],
-            is_featured = is_featured_new,
-        )
-        db.add(recipe)
-        db.flush()
-
-    for ingredientData in data["extendedIngredients"]:
-        ingredient = create_local_ingredients_from_spoonacular_recipe(db, ingredientData)
-
-        recipeIngredient = (
-            db.query(models.RecipeIngredient)
-            .filter(models.RecipeIngredient.ingredient_id == ingredient.id, models.RecipeIngredient.recipe_id == recipe.id)
-            .first()
-        )
-
-        if recipeIngredient is None:
-            recipeIngredient = models.RecipeIngredient(
-                recipe=recipe,
-                ingredient=ingredient,
-                quantity=str(ingredientData["amount"]),
-                unit=ingredientData["unit"],
-            )
-
-        recipe.recipe_ingredients.append(recipeIngredient)
-
-    for meal_type in data.get("dishTypes", []):
-        local_meal_type = (
-            db.query(models.MealType)
-            .filter(func.lower(models.MealType.name) == func.lower(meal_type))
-            .first()
-        )
-
-        if local_meal_type is None:
-            local_meal_type = models.MealType(
-                name=meal_type,
-            )
-            db.add(local_meal_type)
-            db.flush()
-
-        recipe.meal_types.append(local_meal_type)
-        pass
-
-    for diet_type in data.get("diets", []):
-        local_diet = (
-            db.query(models.Diet)
-            .filter(func.lower(models.Diet.name) == func.lower(diet_type))
-            .first()
-        )
-
-        if local_diet is None:
-            local_diet = models.Diet(
-                name=diet_type,
-            )
-            db.add(local_diet)
-            db.flush()
-
-        recipe.diets.append(local_diet)
-        pass
-
-    db.commit()
-    db.refresh(recipe)
-
-    return recipe
 
 def get_user_favourite_recipes(db: Session, user_id: int):
     """Get a user's favourite recipes"""

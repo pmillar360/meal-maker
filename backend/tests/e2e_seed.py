@@ -143,6 +143,10 @@ def main() -> None:
             ingredients=[(tomato, "2", "whole")],
         )
         db.commit()
+        from crud.recipe_import import save_import
+        from tests.normalization_fixtures import fixture_recipes
+        for imported in fixture_recipes():
+            save_import(db, imported)
 
 
 if __name__ == "__main__":

@@ -1,30 +1,38 @@
 export interface Recipe {
   id: number;
   title: string;
-  cooking_time: number;
-  servings: number;
+  cooking_time: number | null;
+  servings: number | null;
   meal_types?: MealType[]; // TODO Should these be optional? what difference does it make?
   diets?: Diet[]
-  image_url: string;
+  image_url: string | null;
+  source_url?: string | null;
+  provider?: string | null;
+  instruction_sections?: { name: string; steps: string[] }[];
   instructions: string | null;
-  instructionSteps: string[];
+  instructionSteps?: string[];
   recipe_ingredients: RecipeIngredient[];
-  description: string;
+  description: string | null;
   is_featured: boolean;
   last_updated: Date;
   isFavourite?: boolean; // TODO Need to figure out how to handle this properly
 }
 
 export interface Ingredient {
+  aliases?: string[];
   id: number;
   name: string;
   category?: string;
 }
 
 export interface RecipeIngredient {
+  id?: number;
+  original?: string | null;
+  preparation?: string | null;
+  amount?: string;
   ingredient: Ingredient;
-  quantity: string;
-  unit: string;
+  quantity: string | null;
+  unit: string | null;
 }
 
 export interface RecipeIngredientAvailability {

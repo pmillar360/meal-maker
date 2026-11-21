@@ -36,7 +36,7 @@ test('a guest can enter an on-hand ingredient and get matching recipes', async (
 
 test('recipes can be filtered by ingredient, meal type, and diet', async ({ page }) => {
   await page.goto('/recipes');
-  await expect(recipeCards(page)).toHaveCount(6);
+  await expect(recipeCards(page)).toHaveCount(8);
 
   const ingredientFilter = page.getByText('Ingredients:', { exact: true }).locator('..');
   await chooseAutocompleteOption(page, ingredientFilter, 'Tomato');
@@ -117,4 +117,32 @@ test('missing ingredients generate a shopping list that can be updated and delet
   await expect(page.getByRole('heading', { name: 'Completed items' })).toBeVisible();
   await page.getByTitle('buttonDeleteItem').click();
   await expect(page.getByText('Your shopping list is empty')).toBeVisible();
+});
+
+for (const width of [390, 1280]) {
+  test(`both providers render normalized recipes at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    for (const [id, amount] of [[7, '240 mL'], [8, '250 mL']] as const) {
+      await page.goto(`/recipes/${id}`);
+      await expect(page.getByRole('heading', { name: 'Green onion broth' })).toBeVisible();
+      await expect(page.getByRole('cell', { name: amount })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Broth', exact: true })).toBeVisible();
+      await expect(page.getByText('Simmer.', { exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+  });
+}
+
+test('an ingredient alias finds both source recipes and favourites keep their local IDs', async ({ page }) => {
+  await page.goto('/recipes');
+  await register(page);
+  const filter = page.getByText('Ingredients:', { exact: true }).locator('..');
+  await filter.locator('input').fill('scallions');
+  await filter.getByText('green onion', { exact: true }).click();
+  await expect(recipeCards(page)).toHaveCount(2);
+  await page.locator('a[href="/recipes/7"]').getByRole('button').click();
+  await expect(page.locator('a[href="/recipes/7"]').getByRole('button', { name: 'Remove Recipe from Favourites' })).toBeVisible();
+  await page.getByRole('link', { name: 'Favourites', exact: true }).click();
+  await expect(page.locator('a[href="/recipes/7"]')).toBeVisible();
+  await expect(page.locator('a[href="/recipes/8"]')).toHaveCount(0);
 });

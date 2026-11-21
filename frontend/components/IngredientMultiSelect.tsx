@@ -13,6 +13,7 @@ type Props = {
 const toOption = (ingredient: Ingredient) => ({
   id: ingredient.id,
   label: ingredient.name,
+  aliases: ingredient.aliases,
 });
 
 export default function IngredientMultiSelect({
