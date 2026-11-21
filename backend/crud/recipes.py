@@ -206,10 +206,15 @@ def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[st
             return recipes
 
         # Cache external recipes locally
+        seen_external_ids = {recipe.spoonacular_id for recipe in recipes}
         for ext_recipe in external_recipes:
             try:
-                local_recipe = create_local_recipe_from_spoonacular(db, get_external_recipe_by_id(ext_recipe["id"])) # Need to fetch full recipe details
+                external_id = ext_recipe["id"]
+                if external_id in seen_external_ids:
+                    continue
+                local_recipe = create_local_recipe_from_spoonacular(db, get_external_recipe_by_id(external_id))
                 recipes.append(local_recipe)
+                seen_external_ids.add(external_id)
             except Exception as e:
                 log(f"Error caching suggested recipe: {type(e).__name__}", level=30)
                 continue

@@ -215,6 +215,23 @@ def test_suggestions_return_local_matches_after_spoonacular_timeout(client, db_s
     assert request.call_args.kwargs["timeout"] == (3, 8)
 
 
+def test_suggestions_keep_each_local_and_external_match_once(client, db_session, test_user):
+    local = _create_recipe_with_ingredients(db_session, test_user, ["Onion"])
+    local.spoonacular_id = 100
+    db_session.commit()
+    suggestions = [{"id": 100}, {"id": 200}, {"id": 200}]
+    with (
+        patch("crud.recipes.get_recipes_by_ingredients_external", return_value=suggestions),
+        patch("crud.recipes.get_external_recipe_by_id", side_effect=lambda id: {"id": id, "title": f"Recipe {id}"}),
+    ):
+        response = client.get("/recipes/suggestions/", params={"ingredients": "Onion"})
+
+    assert response.status_code == 200
+    recipes = response.json()
+    assert [recipe["title"] for recipe in recipes] == [local.title, "Recipe 200"]
+    assert recipes[0]["id"] == local.id
+
+
 def test_get_recipes(client, test_recipe):
     response = client.get("/recipes/")
 
