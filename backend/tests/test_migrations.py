@@ -108,6 +108,24 @@ def test_account_identity_migration_round_trip(migration_database):
         assert connection.scalar(text("SELECT spoonacular_id FROM ingredients WHERE id=30")) == 50
 
 
+def test_onion_migration_preserves_recipe_lines_and_provider_links(migration_database):
+    engine, env = migration_database
+    def upgrade(revision):
+        subprocess.run([sys.executable, "-m", "alembic", "upgrade", revision], cwd=BACKEND_DIR, env=env, check=True)
+
+    upgrade("e51a63f22812")
+    with engine.begin() as db:
+        db.execute(text("INSERT INTO ingredients (id, name, lookup_key) VALUES (1, 'Onion', 'onion'), (2, 'Onions', 'onions')"))
+        db.execute(text("INSERT INTO ingredient_sources VALUES ('example', 'a', 1), ('example', 'b', 2)"))
+        db.execute(text("INSERT INTO recipes (id, title, last_updated, is_featured) VALUES (10, 'Hot Sliced Beef', CURRENT_TIMESTAMP, false)"))
+        db.execute(text("INSERT INTO recipe_ingredient (recipe_id, ingredient_id, position, original) VALUES (10, 1, 0, '1 onion'), (10, 2, 1, '2 onions')"))
+    upgrade("head")
+    with engine.connect() as db:
+        assert db.execute(text("SELECT id, lookup_key FROM ingredients")).all() == [(1, "onion")]
+        assert db.execute(text("SELECT ingredient_id, original FROM recipe_ingredient ORDER BY position")).all() == [(1, "1 onion"), (1, "2 onions")]
+        assert db.execute(text("SELECT external_id, ingredient_id FROM ingredient_sources ORDER BY external_id")).all() == [("a", 1), ("b", 1)]
+
+
 def test_concurrent_imports_share_identity(migration_database):
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier

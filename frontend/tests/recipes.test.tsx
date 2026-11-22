@@ -57,7 +57,20 @@ describe('recipe discovery workflow', () => {
     expect(mocks.getRecipes).toHaveBeenCalledTimes(1);
   });
 
+  it('matches a saved guest fridge name against recipe ingredient aliases', async () => {
+    localStorage.setItem('meal-maker-local-fridge-items', JSON.stringify(['onion']));
+    mocks.getRecipes.mockResolvedValue([{ ...tomatoPasta, title: 'Hot Sliced Beef', recipe_ingredients: [
+      { ingredient: { id: 20, name: 'Onions', aliases: ['onion', 'onions'] } },
+    ] }]);
+    const user = userEvent.setup();
+    render(<Recipes />);
+    await screen.findByRole('heading', { name: 'Hot Sliced Beef' });
+    await user.click(screen.getByRole('checkbox', { name: 'Apply fridge ingredients' }));
+    expect(screen.getByRole('heading', { name: 'Hot Sliced Beef' })).toBeInTheDocument();
+  });
+
   it('loads recipes and applies meal type and diet filters', async () => {
+    mocks.getRecipes.mockResolvedValue([tomatoPasta, tomatoPasta]);
     const user = userEvent.setup();
     render(<Recipes />);
 

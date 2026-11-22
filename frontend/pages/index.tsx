@@ -10,7 +10,7 @@ import {
   getUserFavouriteRecipes,
 } from '../services/recipeService';
 import { getAllIngredients } from '../services/ingredientService';
-import { rankRecipeAvailability, RecipeRankingMode } from '../services/recipeRankingService';
+import { rankRecipeAvailability, RecipeRankingMode, uniqueRecipes } from '../services/recipeRankingService';
 import RecipeCard from '../components/RecipeCard';
 import { useAuth } from '../context/AuthContext';
 import { addFridgeIngredient, deleteFridgeIngredient, getFridgeIngredients } from '../services/fridgeService';
@@ -18,6 +18,13 @@ import IngredientMultiSelect from '../components/IngredientMultiSelect';
 
 const HOME_RANKING_MODE: RecipeRankingMode = 'balanced';
 const GUEST_FRIDGE_STORAGE_KEY = 'meal-maker-local-fridge-items';
+
+function rankFridgeMatches(summaries: RecipeAvailabilitySummary[]) {
+  return rankRecipeAvailability(
+    summaries.filter(summary => summary.available_ingredients > 0),
+    HOME_RANKING_MODE
+  );
+}
 
 export default function Home() {
   const { isLoggedIn, isLoading: authLoading } = useAuth();
@@ -62,15 +69,15 @@ export default function Home() {
 
       setFridgeItems(fridgeData);
 
-      const sortedAvailability = rankRecipeAvailability(availabilityData, HOME_RANKING_MODE);
+      const sortedAvailability = rankFridgeMatches(availabilityData);
 
-      const topMatches = sortedAvailability.slice(0, 9);
+      const topMatches = uniqueRecipes(sortedAvailability.map(item => item.recipe)).slice(0, 9);
       const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
-      topMatches.forEach((item) => {
+      sortedAvailability.forEach((item) => {
         nextAvailabilityMap[item.recipe.id] = item;
       });
 
-      setMatchedRecipes(topMatches.map((item) => item.recipe));
+      setMatchedRecipes(topMatches);
       setAvailabilityByRecipeId(nextAvailabilityMap);
     } catch (error) {
       console.error('Failed to load fridge-based recipe matches:', error);
@@ -86,7 +93,7 @@ export default function Home() {
           getFeaturedRecipes(9),
           getAllIngredients(),
         ]);
-        setFeaturedRecipes(recipes);
+        setFeaturedRecipes(uniqueRecipes(recipes));
         setIngredients(allIngredients);
         setLoading(false);
       } catch (error) {
@@ -127,7 +134,7 @@ export default function Home() {
       try {
         const recipes = await getRecipesByIngredients(localFridgeItems, 9);
         const recipeDetails = await Promise.all(
-          recipes.map((recipe) => getRecipeById(recipe.id).catch(() => null))
+          uniqueRecipes(recipes).map((recipe) => getRecipeById(recipe.id).catch(() => null))
         );
         if (cancelled) return;
 
@@ -153,12 +160,7 @@ export default function Home() {
           };
         });
 
-        const rankedSummaries = rankRecipeAvailability(
-          validDetails
-            .map((recipe) => nextAvailabilityMap[recipe.id])
-            .filter((summary): summary is RecipeAvailabilitySummary => Boolean(summary)),
-          HOME_RANKING_MODE
-        );
+        const rankedSummaries = rankFridgeMatches(validDetails.map(recipe => nextAvailabilityMap[recipe.id]));
 
         const sortedRecipes = rankedSummaries.map((summary) => summary.recipe);
         const sortedAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};

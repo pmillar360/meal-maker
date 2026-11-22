@@ -275,6 +275,17 @@ def test_legacy_ingredient_filter_uses_all_exact_names(client, db_session, test_
     assert client.get("/recipes/", params={"ingredients": "onion,unknown"}).json() == []
 
 
+def test_onion_filter_credits_plural_recipe_ingredient(authenticated_client, db_session, test_user):
+    recipe = _create_recipe_with_ingredients(db_session, test_user, ["Onions", "Beef", "Pepper", "Salt"], title="Hot Sliced Beef")
+    authenticated_client.post("/fridge/", json={"name": "onion", "quantity": "1"})
+    response = authenticated_client.get("/recipes/with-fridge-availability/", params={"ingredients": "onion"})
+    assert response.status_code == 200
+    match, = response.json()
+    assert match["recipe"]["id"] == recipe.id
+    assert (match["available_ingredients"], match["total_ingredients"]) == (1, 4)
+    assert set(match["missing_ingredient_names"]) == {"Beef", "Pepper", "Salt"}
+
+
 def test_suggestions_can_use_any_on_hand_ingredient(client, db_session, test_user):
     onion = _create_recipe_with_ingredients(db_session, test_user, ["Onion"])
     garlic = _create_recipe_with_ingredients(db_session, test_user, ["Garlic"])

@@ -3,7 +3,7 @@ import re
 from fractions import Fraction
 from html.parser import HTMLParser
 
-ALIASES = {"scallion": "green onion", "scallions": "green onion", "green onions": "green onion"}
+ALIASES = {"onions": "onion", "scallion": "green onion", "scallions": "green onion", "green onions": "green onion"}
 
 
 def ingredient_key(name):

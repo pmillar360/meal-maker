@@ -38,8 +38,7 @@ def _build_ingredient_statuses(recipe: models.Recipe, fridge_name_set: set[str])
         if recipe_ingredient.ingredient_id in seen:
             continue
         seen.add(recipe_ingredient.ingredient_id)
-        ingredient_name = _normalize_ingredient_name(recipe_ingredient.ingredient.name)
-        has_in_fridge = ingredient_name in fridge_name_set
+        has_in_fridge = recipe_ingredient.ingredient.lookup_key in fridge_name_set
 
         ingredient_statuses.append({
             "ingredient": recipe_ingredient.ingredient,

@@ -12,7 +12,7 @@ import {
   getAllDiets,
 } from "../../services/recipeService";
 import { getAllIngredients } from "../../services/ingredientService";
-import { rankRecipeAvailability, RecipeRankingMode } from "../../services/recipeRankingService";
+import { rankRecipeAvailability, RecipeRankingMode, uniqueRecipes } from "../../services/recipeRankingService";
 import RecipeCard from "../../components/RecipeCard";
 import { useAuth } from "../../context/AuthContext";
 import { getFridgeIngredients } from "../../services/fridgeService";
@@ -157,9 +157,8 @@ export default function Recipes() {
     return normalizedFridgeIngredientNames.size > 0
       ? recipes.filter((recipe) =>
           (recipe.recipe_ingredients || []).some((recipeIngredient) =>
-            normalizedFridgeIngredientNames.has(
-              recipeIngredient.ingredient.name.trim().toLowerCase()
-            )
+            [recipeIngredient.ingredient.name, ...(recipeIngredient.ingredient.aliases ?? [])]
+              .some(name => normalizedFridgeIngredientNames.has(name.trim().toLowerCase()))
           )
         )
       : recipes;
@@ -193,7 +192,7 @@ export default function Recipes() {
             nameFilteredAvailabilityData,
             RECIPES_RANKING_MODE
           );
-          setRecipes(rankedAvailabilityData.map((item) => item.recipe));
+          setRecipes(uniqueRecipes(rankedAvailabilityData.map((item) => item.recipe)));
           const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
           rankedAvailabilityData.forEach((item) => {
             nextAvailabilityMap[item.recipe.id] = item;
@@ -207,7 +206,7 @@ export default function Recipes() {
               )
             : recipesData;
 
-          setRecipes(nameFilteredRecipes);
+          setRecipes(uniqueRecipes(nameFilteredRecipes));
           setAvailabilityByRecipeId({});
         }
       } catch (error) {

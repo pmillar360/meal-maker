@@ -1,4 +1,13 @@
-import { RecipeAvailabilitySummary } from './TypeService';
+import { Recipe, RecipeAvailabilitySummary } from './TypeService';
+
+export function uniqueRecipes(recipes: Recipe[]): Recipe[] {
+  const seen = new Set<number>();
+  return recipes.filter(recipe => {
+    if (seen.has(recipe.id)) return false;
+    seen.add(recipe.id);
+    return true;
+  });
+}
 
 export type RecipeRankingMode = 'balanced' | 'closest' | 'mostComplete';
 
