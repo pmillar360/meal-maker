@@ -17,8 +17,10 @@ import RecipeCard from "../../components/RecipeCard";
 import { useAuth } from "../../context/AuthContext";
 import { getFridgeIngredients } from "../../services/fridgeService";
 
+import { FridgeSelection, matchesSelection, readGuestFridge } from "../../services/guestFridge";
+
 const RECIPES_RANKING_MODE: RecipeRankingMode = "balanced";
-const GUEST_FRIDGE_STORAGE_KEY = "meal-maker-local-fridge-items";
+
 
 export default function Recipes() {
   const router = useRouter();
@@ -26,7 +28,7 @@ export default function Recipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [availabilityByRecipeId, setAvailabilityByRecipeId] = useState<Record<number, RecipeAvailabilitySummary>>({});
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [fridgeIngredientNames, setFridgeIngredientNames] = useState<string[]>([]);
+  const [fridgeSelections, setFridgeSelections] = useState<FridgeSelection[]>([]);
   const [mealTypes, setMealTypes] = useState<MealType[]>([]);
   const [diets, setDiets] = useState<Diet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,67 +104,44 @@ export default function Recipes() {
       if (isLoggedIn) {
         try {
           const fridgeItems = await getFridgeIngredients();
-          setFridgeIngredientNames(
-            fridgeItems
-              .map((item) => item.name.trim())
-              .filter((name) => Boolean(name))
-          );
+          setFridgeSelections(fridgeItems.map(item => ({ name: item.name, id: item.ingredient_id ?? undefined })));
         } catch (error) {
           console.error("Error fetching fridge ingredient names:", error);
-          setFridgeIngredientNames([]);
+          setFridgeSelections([]);
         }
-        return;
-      }
-
-      const stored = localStorage.getItem(GUEST_FRIDGE_STORAGE_KEY);
-      if (!stored) {
-        setFridgeIngredientNames([]);
         return;
       }
 
       try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setFridgeIngredientNames(
-            parsed
-              .map((item) => String(item).trim())
-              .filter((name) => Boolean(name))
-          );
-          return;
-        }
+        setFridgeSelections(readGuestFridge());
+        return;
       } catch (error) {
         console.error("Error reading local fridge ingredient names:", error);
       }
 
-      setFridgeIngredientNames([]);
+      setFridgeSelections([]);
     };
 
     loadFridgeIngredientNames();
   }, [isLoggedIn]);
 
-  const normalizedFridgeIngredientNames = useMemo(
-    () => new Set(fridgeIngredientNames.map((name) => name.trim().toLowerCase()).filter(Boolean)),
-    [fridgeIngredientNames]
-  );
-
   const visibleRecipes = useMemo(() => {
     if (!applyFridgeIngredients) return recipes;
 
     if (isLoggedIn) {
-      return fridgeIngredientNames.length > 0
+      return fridgeSelections.length > 0
         ? recipes.filter((recipe) => availabilityByRecipeId[recipe.id]?.available_ingredients > 0)
         : recipes;
     }
 
-    return normalizedFridgeIngredientNames.size > 0
+    return fridgeSelections.length > 0
       ? recipes.filter((recipe) =>
           (recipe.recipe_ingredients || []).some((recipeIngredient) =>
-            [recipeIngredient.ingredient.name, ...(recipeIngredient.ingredient.aliases ?? [])]
-              .some(name => normalizedFridgeIngredientNames.has(name.trim().toLowerCase()))
+            fridgeSelections.some(item => matchesSelection(item, recipeIngredient.ingredient))
           )
         )
       : recipes;
-  }, [recipes, availabilityByRecipeId, isLoggedIn, applyFridgeIngredients, fridgeIngredientNames.length, normalizedFridgeIngredientNames]);
+  }, [recipes, availabilityByRecipeId, isLoggedIn, applyFridgeIngredients, fridgeSelections]);
 
   const queryFilters = useMemo(
     () => ({
@@ -286,7 +265,7 @@ export default function Recipes() {
               ? "Using your saved fridge ingredients for filtering."
               : "Using local fridge ingredients from this browser."}
           </p>
-          {!isLoggedIn && fridgeIngredientNames.length === 0 && (
+          {!isLoggedIn && fridgeSelections.length === 0 && (
             <p className="text-xs text-amber-700">
               No local fridge items found yet. Add ingredients on the home page to use this filter.
             </p>
@@ -376,7 +355,7 @@ export default function Recipes() {
       <div className="flex flex-wrap gap-2 mb-2">
         {applyFridgeIngredients && (
           <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-sm flex items-center">
-            Fridge Applied ({fridgeIngredientNames.length})
+            Fridge Applied ({fridgeSelections.length})
           </span>
         )}
         {debouncedSearch && (

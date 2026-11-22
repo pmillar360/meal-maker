@@ -74,11 +74,12 @@ export const getRecipesWithFridgeAvailability = async (
     return response.data;
   };
 
-  export const getRecipesByIngredients = async (ingredientNames: string[], number: number = 10): Promise<Recipe[]> => {
+  export const getRecipesByIngredients = async (ingredientNames: string[], number: number = 10, ingredientIds: number[] = []): Promise<Recipe[]> => {
     let queryParams = new URLSearchParams();
     if (ingredientNames.length > 0)
       queryParams.append("ingredients", ingredientNames.toString());
-    if (number) queryParams.append("number", number.toString());
+    for (const id of ingredientIds) queryParams.append("ingredient_ids", String(id));
+    if (number) queryParams.append("count", number.toString());
     const response = await api.get<Recipe[]>(`/recipes/suggestions/?${queryParams}`);
     return response.data;
   };

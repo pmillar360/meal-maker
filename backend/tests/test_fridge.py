@@ -45,3 +45,15 @@ def test_delete_fridge_item(authenticated_client, test_fridge_item):
     get_response = authenticated_client.get("/fridge")
     items = get_response.json()
     assert not any(item["id"] == test_fridge_item.id for item in items)
+
+
+def test_fridge_selection_retains_identity_until_name_changes(authenticated_client, test_ingredient):
+    response = authenticated_client.post("/fridge/", json={"name": "Old label", "ingredient_id": test_ingredient.id})
+    assert response.status_code == 201
+    item = response.json()
+    assert (item["ingredient_id"], item["name"]) == (test_ingredient.id, test_ingredient.name)
+    url = f"/fridge/{item['id']}"
+    assert authenticated_client.patch(url, json={"quantity": "2"}).json()["ingredient_id"] == test_ingredient.id
+    assert authenticated_client.patch(url, json={"name": "Unlisted food"}).json()["ingredient_id"] is None
+    assert authenticated_client.patch(url, json={"name": test_ingredient.name}).json()["ingredient_id"] == test_ingredient.id
+    assert authenticated_client.post("/fridge/", json={"name": "Unknown", "ingredient_id": 99999}).status_code == 422

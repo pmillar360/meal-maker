@@ -222,7 +222,9 @@ def test_suggestions_keep_each_local_and_external_match_once(client, db_session,
     suggestions = [{"id": 100}, {"id": 200}, {"id": 200}]
     with (
         patch("crud.recipes.get_recipes_by_ingredients_external", return_value=suggestions),
-        patch("crud.recipes.get_external_recipe_by_id", side_effect=lambda id: {"id": id, "title": f"Recipe {id}"}),
+        patch("crud.recipes.get_external_recipe_by_id", side_effect=lambda id: {
+            "id": id, "title": f"Recipe {id}", "extendedIngredients": [{"name": "onions"}],
+        }),
     ):
         response = client.get("/recipes/suggestions/", params={"ingredients": "Onion"})
 

@@ -89,6 +89,7 @@ export interface Diet {
 }
 
 export interface FridgeItem {
+  ingredient_id?: number | null;
   id: number;
   name: string;
   quantity: string;

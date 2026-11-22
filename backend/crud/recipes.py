@@ -20,16 +20,16 @@ def _normalized_ingredient_names(ingredients: List[str]) -> set[str]:
     return {_normalize_ingredient_name(name) for name in ingredients if name.strip()}
 
 
-def _get_user_fridge_name_set(db: Session, user_id: int) -> set[str]:
-    fridge_items = db.query(models.FridgeItem).filter(models.FridgeItem.user_id == user_id).all()
-    return {
-        _normalize_ingredient_name(item.name)
-        for item in fridge_items
-        if _normalize_ingredient_name(item.name)
-    }
+def _get_user_fridge_ids(db: Session, user_id: int) -> set[int]:
+    items = db.query(models.FridgeItem).filter_by(user_id=user_id).all()
+    ids = {item.ingredient_id for item in items if item.ingredient_id is not None}
+    names = {ingredient_key(item.name) for item in items if item.ingredient_id is None and item.name}
+    if names:
+        ids.update(row.id for row in db.query(models.Ingredient.id).filter(models.Ingredient.lookup_key.in_(names)))
+    return ids
 
 
-def _build_ingredient_statuses(recipe: models.Recipe, fridge_name_set: set[str]):
+def _build_ingredient_statuses(recipe: models.Recipe, fridge_ids: set[int]):
     ingredient_statuses = []
     missing_recipe_ingredients = []
 
@@ -38,7 +38,7 @@ def _build_ingredient_statuses(recipe: models.Recipe, fridge_name_set: set[str])
         if recipe_ingredient.ingredient_id in seen:
             continue
         seen.add(recipe_ingredient.ingredient_id)
-        has_in_fridge = recipe_ingredient.ingredient.lookup_key in fridge_name_set
+        has_in_fridge = recipe_ingredient.ingredient_id in fridge_ids
 
         ingredient_statuses.append({
             "ingredient": recipe_ingredient.ingredient,
@@ -184,14 +184,18 @@ def get_featured_recipes(db: Session, number: int):
         )
 
 # TODO Check for duplicates when searching external recipes?
-def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[str], number: int = 10, fetchExternal: bool = False):
+def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[str], number: int = 10, fetchExternal: bool = False, ingredient_ids: Optional[List[int]] = None):
     """Suggest recipes that use at least one on-hand ingredient."""
     query = db.query(models.Recipe)
     names = _normalized_ingredient_names(ingredient_names)
+    selected_ids = set(ingredient_ids or [])
+    if selected_ids:
+        catalog_names = db.query(models.Ingredient.name).filter(models.Ingredient.id.in_(selected_ids))
+        ingredient_names = list(dict.fromkeys([*ingredient_names, *(row.name for row in catalog_names)]))
     if names:
-        query = query.filter(models.Recipe.recipe_ingredients.any(
-            models.RecipeIngredient.ingredient.has(models.Ingredient.lookup_key.in_(names))
-        ))
+        selected_ids.update(row.id for row in db.query(models.Ingredient.id).filter(models.Ingredient.lookup_key.in_(names)))
+    if ingredient_ids or names:
+        query = query.filter(models.Recipe.recipe_ingredients.any(models.RecipeIngredient.ingredient_id.in_(selected_ids)))
     recipes = query.limit(number).all()
 
     # This is expensive on the API, so only do it if requested
@@ -212,8 +216,10 @@ def get_recipe_suggestions_by_ingredients(db: Session, ingredient_names: List[st
                 if external_id in seen_external_ids:
                     continue
                 local_recipe = create_local_recipe_from_spoonacular(db, get_external_recipe_by_id(external_id))
-                recipes.append(local_recipe)
                 seen_external_ids.add(external_id)
+                if any(line.ingredient_id in selected_ids or line.ingredient.lookup_key in names
+                       for line in local_recipe.recipe_ingredients):
+                    recipes.append(local_recipe)
             except Exception as e:
                 log(f"Error caching suggested recipe: {type(e).__name__}", level=30)
                 continue
@@ -233,13 +239,13 @@ def get_recipes_with_fridge_availability(
     *,
     ingredient_ids: Optional[List[int]] = None,
 ):
-    fridge_name_set = _get_user_fridge_name_set(db, user_id)
+    fridge_ids = _get_user_fridge_ids(db, user_id)
     recipe_list = get_recipes(db, ingredients, meal_types, diet, search, skip, limit, ingredient_ids=ingredient_ids)
 
     availability_summaries = []
 
     for recipe in recipe_list:
-        ingredient_statuses, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_name_set)
+        ingredient_statuses, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_ids)
         total_ingredients = len(ingredient_statuses)
         missing_count = len(missing_recipe_ingredients)
 
@@ -256,8 +262,8 @@ def get_recipes_with_fridge_availability(
 
 def get_recipe_availability_for_user(db: Session, user_id: int, recipe_id: int):
     recipe = get_recipe_by_id(db, recipe_id)
-    fridge_name_set = _get_user_fridge_name_set(db, user_id)
-    ingredient_statuses, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_name_set)
+    fridge_ids = _get_user_fridge_ids(db, user_id)
+    ingredient_statuses, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_ids)
     total_ingredients = len(ingredient_statuses)
     missing_count = len(missing_recipe_ingredients)
 
@@ -273,8 +279,8 @@ def get_recipe_availability_for_user(db: Session, user_id: int, recipe_id: int):
 
 def get_missing_recipe_ingredients_for_user(db: Session, user_id: int, recipe_id: int):
     recipe = get_recipe_by_id(db, recipe_id)
-    fridge_name_set = _get_user_fridge_name_set(db, user_id)
-    _, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_name_set)
+    fridge_ids = _get_user_fridge_ids(db, user_id)
+    _, missing_recipe_ingredients = _build_ingredient_statuses(recipe, fridge_ids)
     missing_ids = {line.ingredient_id for line in missing_recipe_ingredients}
     return [line for line in recipe.recipe_ingredients if line.ingredient_id in missing_ids]
 

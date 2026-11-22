@@ -19,6 +19,7 @@ dependencies = [
     "requests",
     "sqlalchemy",
     "uvicorn",
+    "inflect>=7.6.0",
 ]
 
 [dependency-groups]

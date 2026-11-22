@@ -117,10 +117,10 @@ def get_featured_recipes(
 
 
 @router.get("/recipes/suggestions/", response_model=List[schemas.Recipe])
-def get_recipe_suggestions(ingredients: str = Query(...), count: int = 5, db: Session = Depends(get_db)):
+def get_recipe_suggestions(ingredients: str = "", count: int = 5, ingredient_ids: Optional[List[int]] = Query(None), db: Session = Depends(get_db)):
     """Get recipe suggestions based on user preferences"""
     ingredient_names = ingredients.split(",") if ingredients else []
-    return recipes.get_recipe_suggestions_by_ingredients(db, ingredient_names, count, fetchExternal=True)
+    return recipes.get_recipe_suggestions_by_ingredients(db, ingredient_names, count, fetchExternal=True, ingredient_ids=ingredient_ids)
 
 
 # Recipe Metadata Endpoints

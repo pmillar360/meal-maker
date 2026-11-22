@@ -126,6 +126,24 @@ def test_onion_migration_preserves_recipe_lines_and_provider_links(migration_dat
         assert db.execute(text("SELECT external_id, ingredient_id FROM ingredient_sources ORDER BY external_id")).all() == [("a", 1), ("b", 1)]
 
 
+def test_fridge_identity_backfill_preserves_items_and_catalog_ids(migration_database):
+    engine, env = migration_database
+
+    def upgrade(revision):
+        subprocess.run([sys.executable, "-m", "alembic", "upgrade", revision], cwd=BACKEND_DIR, env=env, check=True)
+
+    upgrade("7d2ac9414b60")
+    with engine.begin() as db:
+        db.execute(text("INSERT INTO ingredients (id, name, lookup_key) VALUES (42, 'Carrots', 'carrots')"))
+        db.execute(text("INSERT INTO fridge_items (id, name, quantity) VALUES (1, 'carrot', '2'), (2, 'Unknown food', '1')"))
+    upgrade("head")
+    with engine.connect() as db:
+        assert db.execute(text("SELECT id, lookup_key FROM ingredients")).all() == [(42, "carrot")]
+        assert db.execute(text("SELECT name, quantity, ingredient_id FROM fridge_items ORDER BY id")).all() == [
+            ("carrot", "2", 42), ("Unknown food", "1", None),
+        ]
+
+
 def test_concurrent_imports_share_identity(migration_database):
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier

@@ -74,7 +74,11 @@ export default function Fridge() {
             setRecipeSuggestions([]);
             return;
         }
-        const recipes = await getRecipesByIngredients(ingredients.map(item => item.name));
+        const recipes = await getRecipesByIngredients(
+            ingredients.filter(item => item.ingredient_id == null).map(item => item.name),
+            10,
+            ingredients.flatMap(item => item.ingredient_id == null ? [] : [item.ingredient_id])
+        );
         setRecipeSuggestions(recipes);
     }
 

@@ -2,7 +2,7 @@ import datetime
 from uuid import uuid4
 from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Index, Integer, String, Text, Table, DateTime, UniqueConstraint, func
 from sqlalchemy import JSON
-from util.recipe_normalization import ALIASES, ingredient_key, display_amount, instruction_sections
+from util.recipe_normalization import ingredient_aliases, ingredient_key, display_amount, instruction_sections
 from sqlalchemy.orm import validates, relationship, Mapped, mapped_column
 
 from .database import Base
@@ -125,7 +125,7 @@ class Ingredient(Base):
 
     @property
     def aliases(self):
-        return [key for key, value in ALIASES.items() if value == self.lookup_key] + [self.lookup_key]
+        return ingredient_aliases(self.lookup_key)
 
     @validates("name")
     def set_lookup_key(self, key, name):
@@ -178,6 +178,7 @@ class MealType(Base):
 
 class FridgeItem(Base):
     __tablename__ = "fridge_items"
+    ingredient_id = mapped_column(Integer, ForeignKey("ingredients.id"), nullable=True)
     id = mapped_column(Integer, primary_key=True, index=True)
     user_id = mapped_column(Integer, ForeignKey("users.id"))
     name = mapped_column(String)

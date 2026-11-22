@@ -140,6 +140,7 @@ class UserIdentity(BaseModel):
     username: str
 
 class FridgeItemBase(BaseModel):
+    ingredient_id: int | None = None
     name: str
     quantity: Optional[str] = None
 
@@ -152,6 +153,7 @@ class FridgeItem(FridgeItemBase):
     model_config = ConfigDict(from_attributes=True)
 
 class FridgeItemUpdate(BaseModel):
+    name: str | None = None
     quantity: Optional[str] = None
 
 class UserBase(BaseModel):

@@ -68,3 +68,18 @@ def test_refresh_and_rollback(db_session, monkeypatch):
         save_import(db_session, invalid)
     assert db_session.scalar(select(models.Recipe)).title == STRUCTURED["title"]
     assert len(recipe.recipe_ingredients) == 1
+
+
+@pytest.mark.parametrize("first,second", [("carrots", "carrot"), ("red tomato", "red tomatoes"), ("berries", "berry")])
+def test_plural_import_order_preserves_catalog_identity(db_session, first, second):
+    from crud.recipe_import import resolve_ingredient
+    previous = resolve_ingredient(db_session, "one", free_text_line(first))
+    current = resolve_ingredient(db_session, "two", free_text_line(second))
+    assert current.id == previous.id
+    assert {first, second} <= set(current.aliases)
+    assert current.name == ingredient_key(first)
+
+
+@pytest.mark.parametrize("name", ["rolled oats", "hummus", "couscous", "asparagus", "onion powder"])
+def test_preserves_grocery_name(name):
+    assert ingredient_key(name) == name

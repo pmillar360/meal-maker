@@ -3,12 +3,7 @@ import re
 from fractions import Fraction
 from html.parser import HTMLParser
 
-ALIASES = {"onions": "onion", "scallion": "green onion", "scallions": "green onion", "green onions": "green onion"}
-
-
-def ingredient_key(name):
-    key = " ".join(name.casefold().split())
-    return ALIASES.get(key, key)
+from util.ingredient_names_v1 import ingredient_key, ingredient_aliases
 
 
 class RecipeText(HTMLParser):

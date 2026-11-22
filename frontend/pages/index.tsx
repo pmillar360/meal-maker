@@ -16,8 +16,10 @@ import { useAuth } from '../context/AuthContext';
 import { addFridgeIngredient, deleteFridgeIngredient, getFridgeIngredients } from '../services/fridgeService';
 import IngredientMultiSelect from '../components/IngredientMultiSelect';
 
+import { FridgeSelection, GUEST_FRIDGE_STORAGE_KEY, matchesSelection, readGuestFridge, resolveGuestSelections } from '../services/guestFridge';
+
 const HOME_RANKING_MODE: RecipeRankingMode = 'balanced';
-const GUEST_FRIDGE_STORAGE_KEY = 'meal-maker-local-fridge-items';
+
 
 function rankFridgeMatches(summaries: RecipeAvailabilitySummary[]) {
   return rankRecipeAvailability(
@@ -31,7 +33,7 @@ export default function Home() {
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
-  const [localFridgeItems, setLocalFridgeItems] = useState<string[]>([]);
+  const [localFridgeItems, setLocalFridgeItems] = useState<FridgeSelection[]>([]);
   const [localFridgeLoaded, setLocalFridgeLoaded] = useState(false);
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [availabilityByRecipeId, setAvailabilityByRecipeId] = useState<Record<number, RecipeAvailabilitySummary>>({});
@@ -39,25 +41,15 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [matchingLoading, setMatchingLoading] = useState(false);
 
-  const activeFridgeNames = useMemo(
-    () => (isLoggedIn ? fridgeItems.map((item) => item.name) : localFridgeItems),
-    [isLoggedIn, fridgeItems, localFridgeItems]
-  );
-
-  const selectedFridgeIngredients = useMemo(
-    () =>
-      activeFridgeNames.map((name, index) => {
-        const matchedIngredient = ingredients.find(
-          (ingredient) => [ingredient.name, ...(ingredient.aliases ?? [])].some(alias => alias.toLowerCase() === name.trim().toLowerCase())
-        );
-
-        return {
-          id: matchedIngredient?.id ?? -(index + 1),
-          name,
-        };
-      }),
-    [activeFridgeNames, ingredients]
-  );
+  const selectedFridgeIngredients = useMemo(() => {
+    const items = isLoggedIn
+      ? fridgeItems.map(item => ({ id: item.ingredient_id ?? undefined, name: item.name }))
+      : localFridgeItems;
+    return items.map((item, index) => ({
+      name: item.name,
+      id: item.id ?? ingredients.find(ingredient => matchesSelection(item, ingredient))?.id ?? -(index + 1),
+    }));
+  }, [isLoggedIn, fridgeItems, localFridgeItems, ingredients]);
 
   const loadLoggedInMatches = async () => {
     setMatchingLoading(true);
@@ -132,20 +124,24 @@ export default function Home() {
     const loadLocalMatches = async () => {
       setMatchingLoading(true);
       try {
-        const recipes = await getRecipesByIngredients(localFridgeItems, 9);
+        const recipes = await getRecipesByIngredients(
+          localFridgeItems.filter(item => item.id === undefined).map(item => item.name),
+          9,
+          localFridgeItems.flatMap(item => item.id === undefined ? [] : [item.id])
+        );
         const recipeDetails = await Promise.all(
           uniqueRecipes(recipes).map((recipe) => getRecipeById(recipe.id).catch(() => null))
         );
         if (cancelled) return;
 
         const validDetails = recipeDetails.filter((recipe): recipe is Recipe => Boolean(recipe));
-        const fridgeSet = new Set(localFridgeItems.map((name) => name.trim().toLowerCase()));
+
         const nextAvailabilityMap: Record<number, RecipeAvailabilitySummary> = {};
 
         validDetails.forEach((recipe) => {
           const ingredients = new Map(recipe.recipe_ingredients?.map(({ ingredient }) => [ingredient.id, ingredient]));
           const missingNames = [...ingredients.values()].filter(ingredient =>
-            ![ingredient.name, ...(ingredient.aliases ?? [])].some(name => fridgeSet.has(name.trim().toLowerCase()))
+            !localFridgeItems.some(item => matchesSelection(item, ingredient))
           ).map(ingredient => ingredient.name);
           const total = ingredients.size;
           const missing = missingNames.length;
@@ -196,18 +192,15 @@ export default function Home() {
   }, [isLoggedIn]);
 
   useEffect(() => {
+    if (loading || localFridgeLoaded) return;
     try {
-      const stored = localStorage.getItem(GUEST_FRIDGE_STORAGE_KEY);
-      const items: unknown = stored ? JSON.parse(stored) : [];
-      if (Array.isArray(items)) {
-        setLocalFridgeItems(items.filter((item): item is string => typeof item === 'string'));
-      }
+      setLocalFridgeItems(resolveGuestSelections(readGuestFridge(), ingredients));
     } catch (error) {
       console.error('Failed to read guest fridge ingredients:', error);
     } finally {
       setLocalFridgeLoaded(true);
     }
-  }, []);
+  }, [ingredients, loading, localFridgeLoaded]);
 
   useEffect(() => {
     if (isLoggedIn || !localFridgeLoaded) {
@@ -226,10 +219,8 @@ export default function Home() {
       return;
     }
 
-    const activeNameSet = new Set(activeFridgeNames.map((name) => name.toLowerCase()));
-    const itemsToAdd = items
-      .map((item) => item.name.trim())
-      .filter((name) => Boolean(name) && !activeNameSet.has(name.toLowerCase()));
+    const selectedIds = new Set(selectedFridgeIngredients.map(item => item.id));
+    const itemsToAdd = items.filter(item => !selectedIds.has(item.id));
 
     if (itemsToAdd.length === 0) {
       return;
@@ -238,7 +229,7 @@ export default function Home() {
     if (isLoggedIn) {
       try {
         await Promise.all(
-          itemsToAdd.map((name) => addFridgeIngredient({ name, quantity: '' }))
+          itemsToAdd.map(({ id, name }) => addFridgeIngredient({ ingredient_id: id, name, quantity: '' }))
         );
         await loadLoggedInMatches();
       } catch (error) {
@@ -248,10 +239,7 @@ export default function Home() {
     }
 
     setLocalFridgeItems((prev) => {
-      const existingNames = new Set(prev.map((item) => item.toLowerCase()));
-      const nextItems = itemsToAdd.filter(
-        (name) => !existingNames.has(name.toLowerCase())
-      );
+      const nextItems = itemsToAdd.filter(ingredient => !prev.some(item => matchesSelection(item, ingredient)));
       return [...prev, ...nextItems];
     });
   };
@@ -267,8 +255,8 @@ export default function Home() {
       return;
     }
 
-    if (typeof value === 'string') {
-      setLocalFridgeItems((prev) => prev.filter((item) => item !== value));
+    if (!isLoggedIn) {
+      setLocalFridgeItems(prev => prev.filter(item => (item.id ?? item.name) !== value));
     }
   };
 
@@ -335,14 +323,14 @@ export default function Home() {
                 ))
               : localFridgeItems.map((item) => (
                   <button
-                    key={item}
-                    onClick={() => handleRemoveFridgeItem(item)}
+                    key={item.id ?? item.name}
+                    onClick={() => handleRemoveFridgeItem(item.id ?? item.name)}
                     className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 hover:bg-blue-200"
                   >
-                    {item} ×
+                    {item.name} ×
                   </button>
                 ))}
-            {activeFridgeNames.length === 0 && (
+            {selectedFridgeIngredients.length === 0 && (
               <p className="text-sm text-gray-500">Add ingredients to start getting recipe matches.</p>
             )}
           </div>

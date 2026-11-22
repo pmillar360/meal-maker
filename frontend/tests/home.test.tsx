@@ -58,13 +58,14 @@ describe('home ingredient matching workflow', () => {
     await user.click(screen.getByText('Tomato'));
 
     expect(await screen.findByRole('button', { name: 'Tomato ×' })).toBeInTheDocument();
-    await waitFor(() => expect(mocks.getRecipesByIngredients).toHaveBeenCalledWith(['Tomato'], 9));
+    await waitFor(() => expect(mocks.getRecipesByIngredients).toHaveBeenCalledWith([], 9, [tomato.id]));
     expect(await screen.findByText('1/2 ingredients available')).toBeInTheDocument();
     for (const name of ['What Can I Cook Right Now?', 'Featured Recipes']) {
       const section = screen.getByRole('heading', { name }).closest('section')!;
       expect(within(section).getAllByRole('heading', { name: 'Tomato Pasta' })).toHaveLength(1);
     }
     expect(mocks.getRecipeById).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem('meal-maker-local-fridge-items')!)).toEqual([{ id: tomato.id, name: tomato.name }]);
   });
 
   it.each([false, true])('requires an on-hand ingredient for recommendations (signed in: %s)', async (signedIn) => {
@@ -86,6 +87,27 @@ describe('home ingredient matching workflow', () => {
     expect(await screen.findByText('1/2 ingredients available')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Plain pasta' })).not.toBeInTheDocument();
   });
+
+  it.each(['onions', 'onion', { id: 17, name: 'Old catalog label' }])(
+    'restores %j to its catalog ID and credits Hot Sliced Beef once',
+    async saved => {
+      const onion = { id: 17, name: 'Onion', aliases: ['onions'] };
+      const recipe = {
+        ...tomatoPasta, title: 'Hot Sliced Beef',
+        recipe_ingredients: [onion, onion, ...['Beef', 'Pepper', 'Salt'].map((name, i) => ({ id: i + 20, name }))]
+          .map(ingredient => ({ ingredient, quantity: '1', unit: '' })),
+      };
+      localStorage.setItem('meal-maker-local-fridge-items', JSON.stringify([saved]));
+      mocks.getAllIngredients.mockResolvedValue([onion]);
+      mocks.getRecipesByIngredients.mockResolvedValue([recipe]);
+      mocks.getRecipeById.mockResolvedValue(recipe);
+      render(<Home />);
+      expect(await screen.findByText('1/4 ingredients available')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Hot Sliced Beef' })).toBeInTheDocument();
+      expect(mocks.getRecipesByIngredients).toHaveBeenLastCalledWith([], 9, [17]);
+      expect(JSON.parse(localStorage.getItem('meal-maker-local-fridge-items')!)).toEqual([{ id: 17, name: 'Onion' }]);
+    }
+  );
 
   it('restores a guest fridge on remount and persists removals', async () => {
     const key = 'meal-maker-local-fridge-items';
